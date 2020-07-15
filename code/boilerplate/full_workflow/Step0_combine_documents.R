@@ -54,7 +54,7 @@ epa_docs= epa_docs[EIS.Number  %in% epa_docs[,.N,by=.(EIS.Number)][N==1,]$EIS.Nu
 #epa_docs = epa_docs[grep('App[A-Z]',File_Name,invert = T),]
 
 
-app_drops = grepl('Appendix|Appendices|appendix|appendices|appx|final_biological_opinion|BiologicalAssessment|Appendice|Applendix|Appenices|APPENDIX|APPENDICES|Appedicies',epa_docs$File_Name)&!grepl('and Appendix|to Appendix|Chapter|Front|Cover|\\& Append',epa_docs$File_Name)
+app_drops = grepl('Appendix|Appendices|appendix|appendices|appx|final_biological_opinion|Traffic_Analysis_Addendum|Aerial_Atlas|BiologicalAssessment|Appendice|Applendix|Appenices|APPENDIX|APPENDICES|Appedicies',epa_docs$File_Name)&!grepl('and Appendix|to Appendix|Chapter|Front|Cover|\\& Append',epa_docs$File_Name)
 epa_docs = epa_docs[EIS.Number  %in% epa_docs[,.N,by=.(EIS.Number)][N==1,]$EIS.Number|!app_drops,]
 
 app_drops = grepl('App([A-Z]|\\.[1-9])|App\\s[A-Z]|(App|APP|Appx|Appndx|Appnd)(\\s|_|\\.|-)[A-Z1-9]|APX(\\s|_|\\.|-)[A-Z1-9]|Apps[A-Z]|Appdx|Appedix|Appdcs(_|\\.|\\s)[0-9A-Z]|(A|a)ppend[A-Z]',epa_docs$File_Name)&!grepl('Front.*to_App\\.1|withAppA|and_App(\\s|_|)A|Chapter|Cover|wApp|Front',epa_docs$File_Name)
@@ -129,6 +129,7 @@ usfs$YEAR[is.na(usfs$YEAR)|usfs$YEAR==''] <- year(mdy(usfs$`Last Updated:`[is.na
 usfs_docs = fread('../eis_documents/agency_nepa_libraries/usfs/metadata/forest_service_document_record.csv')
 setnames(usfs_docs,c('Project_Num','File_Name'),c('PROJECT_ID','FILE_NAME'))
 usfs_docs = usfs_docs[PROJECT_ID %in% usfs$PROJECT_ID ,]
+
 
 usfs_docs = usfs_docs[Stage!='Supporting',]
 usfs_docs = usfs_docs[Stage!='Scoping',]
@@ -300,20 +301,34 @@ usfs_sub_docs = usfs_docs[,.(YEAR,FILE_NAME, FILE_LOC,PROJECT_TYPE,AGENCY,PROJEC
 
 ex = file.exists(paste(usfs_sub_docs$FILE_LOC,usfs_sub_docs$FILE_NAME,sep = '/'))
 
-usfs_sub_docs[!ex,]
+
 usfs_sub_docs = usfs_sub_docs[ex,]
 
 
-# fs_eis_not_found = epa_nodoc[Agency == 'Forest Service']
-# usfs_overview = fread('../eis_documents/agency_nepa_libraries/usfs/metadata/forest_service_project_overview.csv')
-# fs_eis_not_found = fs_eis_not_found[Title %in% usfs_overview$Project,]
-# fs_eis_not_found$USFS_ID = gsub('=','',str_extract(usfs_overview$Page[match(fs_eis_not_found$Title,usfs_overview$Project)],'=[0-9]{1,}$'))
-# fs_eis_docs = usfs_docs[Project_Num %in% fs_eis_not_found$USFS_ID ,]
-# fs_eis_docs = fs_eis_docs[!grepl('Notice of Intent|Report|ROD|Administrative Review Response|LegalNotice|Objection Letter|^Appendix|Map',Document_Name),]
-# feis = fs_eis_docs[grepl("FEIS",Document_Name)&Stage!='Supporting',]
-# usfs_docs[Document_Name=='2013 12 13_FEIS__Appendices-web']
-#usfs_exdocs =  usfs_docs[!Stage %in% c('Analysis','Assessment','Decision'),]
-#usfs_docs = usfs_docs[Stage %in% c('Analysis','Assessment','Decision'),]
+require(pbapply)
+usfs_docs_split = split(usfs_sub_docs,usfs_sub_docs$PROJECT_ID)
+usfs_docs_split  = usfs_docs_split[sapply(usfs_docs_split ,nrow)>1]
+drop_list = pblapply(seq_along(usfs_docs_split),function(f){
+bos = combn(paste(usfs_docs_split[[f]]$FILE_LOC,usfs_docs_split[[f]]$FILE_NAME,sep ='/'),2,simplify = F)
+text_list = lapply(bos,function(a) lapply(a,function(b) fread(b)$text))
+for(t in seq_along(text_list)){
+distmat = stringdist::stringdistmatrix(text_list[[t]][[1]],text_list[[t]][[2]],method = 'qgram')
+min_loc =apply(distmat,1,which.min)
+run = rle(diff(min_loc)==1)
+if(any(run$values)){
+props = max(run$lengths[run$values])/c(length(text_list[[t]][[1]]),length(text_list[[t]][[2]]))
+if(sum(props>0.5)==1){return(bos[[t]][props>0.5])}
+if(sum(props>0.5)==2){return(bos[[t]][which.min(c(length(text_list[[t]][[1]]),length(text_list[[t]][[2]])))])}
+else{return(NULL)}
+}
+}
+},cl = 5)
+gc()
+usfs_sub_docs = usfs_sub_docs[!FILE_NAME %in% basename(unlist(drop_list)),]
+
+
+
+  
 
 
 ###############
@@ -337,7 +352,7 @@ blm_docs = blm_docs[!grepl('Files',`Available Formats`),]
 raw_docs = blm_docs
 blm_docs = blm_docs[!grepl('^Appendix',`Document Name`),]
 blm_docs = blm_docs[!grepl('^Appendix',File_Name),]
-
+blm_docs = blm_docs[!grepl('jpg$|png$|txt$|zip$',File_Name,perl = T),]
 
 #blm[`NEPA #`=='DOI-BLM-NM-P020-2016-1249-EA',]
 #blm_docs[NEPA_ID=='DOI-BLM-NM-P020-2016-1249-EA',]
@@ -348,6 +363,8 @@ blm_docs = blm_docs[!grepl('^Appendix',File_Name),]
 # blm_eis$`Project Name`[blm_eis$`Project Name`=="Greater Phoenix Mine Project"] <- "Greater Phoenix Project"  
 # blm_eis$`Project Name`[blm_eis$`Project Name`=="Monument Butte Oil and Gas Development Project" ] <- "Monument Butte Area Oil and Gas Development Project, Duchesne and Uintah County, UtahImpact Statement for Newfield Exploration Corporation Monument Butte Oil and Gas Development Project in Uintah and Duchesne Counties"
 blm_docs = blm_docs[!duplicated(blm_docs),]
+
+
 
 epa$Title[grepl('Monument Butte Oil and Gas Development',epa$Title)] <- "Monument Butte Oil and Gas Development Project" 
 epa$Title[grepl("Vegetation Treatments Using Aminopyralid, Fluroxypyr, and Rimsulfuron on Bureau of Land Management Lands in 17 Western States",epa$Title)] <- "Vegetation Treatments Using Aminopyralid Fluroxypyr and Rimsulfuron on BLM Lands in 17 Western States PEIS"
@@ -372,25 +389,8 @@ blm_docs$Year = blm$Year[match(blm_docs$NEPA_ID,blm$`NEPA #`)]
 blm_docs = blm_docs[NEPA_ID%in%blm$`NEPA #`,]
 
 
-
 name_is_file = blm_docs[gsub('\\.pdf','',blm_docs$File_Name)==blm_docs$NEPA_ID]$NEPA_ID
 blm_docs = blm_docs[!NEPA_ID%in% name_is_file|gsub('\\.pdf','',File_Name)==NEPA_ID,]
-
-
-
-
-
-blm_docs = blm_docs[!Set_Type%in%c('Scoping','Notice of Competitive Lease Sale','Preliminary EA','Scoping Documents','Public Comment Letters',
-                                  'Maps','Comments on Preliminary EA','Appendices','Public Scoping','Morgan Group Proposed Decisions',
-                                 'Rangeland Health Assessments','Final Grazing Decisions',
-                                  'Draft Resource Reports','Resource Reports','Other References','Channel Stability Monitoring Report','Decision',
-                                  'Master Development Plan Documents','News Release','Other Documentation','Decision Record',
-                                  'Final Rangeland Health Assessment and Evaluation Report','Bagdad Mine Compensatory Mitigation Documentation',
-                                  'Timber Sale Decision',
-                                  'Morgan Group Final Decisions','Draft Environmental Assessment','Morgan Group 5 Rangeland Health Assessment',
-                                  'Preliminary Environmental Assessment','Preliminary Environmental Assessment Documents','Protests'),]
-blm_docs = blm_docs[!Set_Name%in%c('Draft Resource Reports','Channel Stability Monitoring Report','Resource Reports','Rangeland Health Assessments',
-                                   'Other References','Draft Resource Reports'),]
 
 
 blm_docs = blm_docs[!grepl('Scoping',Set_Type),]
@@ -402,15 +402,6 @@ blm_docs = blm_docs[!grepl('PRELIMINARY(\\s|_|-)EA$|EA(\\s|_|-)PRELIMINARY$|FONS
 blm_docs = blm_docs[!grepl('^FINDING OF NO SIG',toupper(`Document Name`)),]
 blm_docs = blm_docs[!grepl('^(UNSIGNED|APPROVED) FINDING OF NO SIG',toupper(`Document Name`)),]
 blm_docs = blm_docs[!grepl('^DEAR READER',toupper(`Document Name`)),]
-blm_docs = blm_docs[!grepl('^APPENDIX',toupper(Set_Name)),]
-blm_docs = blm_docs[!grepl('PUBLIC COMMENTS',toupper(Set_Name)),]
-blm_docs = blm_docs[!grepl('^MAPS',toupper(Set_Name)),]
-blm_docs = blm_docs[!grepl('FINAL DECISIONS',toupper(Set_Type)),]
-blm_docs = blm_docs[!grepl('SUBMISSION',toupper(Set_Type)),]
-blm_docs = blm_docs[!grepl('PRELIMINARY',toupper(Set_Type)),]
-blm_docs = blm_docs[!grepl('PROTESTS AND RESPONSES',toupper(Set_Type)),]
-blm_docs = blm_docs[!grepl('RANGELAND HEALTH',toupper(Set_Type)),]
-blm_docs = blm_docs[!grepl('CONSULTATION',toupper(Set_Type)),]
 blm_docs = blm_docs[!grepl('DEAR READER',toupper(`Document Name`)),]
 blm_docs = blm_docs[!grepl('SOIL_REPORT',toupper(`Document Name`)),]
 
@@ -420,7 +411,9 @@ blm_docs = blm_docs[!grepl('NOTICE OF REALTY',toupper(`Document Name`)),]
 blm_docs = blm_docs[toupper(`Document Name`)!='FONSI',]
 
 
-blm_docs = blm_docs[!grepl('Biological Assessment|Supporting|Draft|Scoping|Notice of Availability|Federal Register|Public Comment',Set_Name),]
+
+blm_docs$TAG = grepl('(^|_|-|\\s|FINAL)(EA|FEA)($|_|-|\\s)|ENVIRONMENTAL(_|-|\\s|)ASSESSMENT',blm_docs$File_Name,perl = T)
+
 blm_docs = blm_docs[!grepl('Scoping',`Document Name`),]
 blm_docs = blm_docs[!grepl('^Notice of',`Document Name`),]
 
@@ -432,11 +425,7 @@ drops = unique(blm_docs[Set_Name=='Final EA',]$NEPA_ID)
 blm_docs = blm_docs[Set_Name=='Final EA' | !NEPA_ID %in% drops,]
 
 blm_docs = blm_docs[`Document Name`!='DR',]
-blm_docs = blm_docs[Set_Name!='Background NEPA and Planning Documents',]
-blm_docs = blm_docs[Set_Name!='Cooperating Agencies - MOUs',]
-blm_docs = blm_docs[Set_Type!='Public Comment Period Documents',]
-blm_docs = blm_docs[Set_Type!='Comments on the Preliminary EA',]
-blm_docs = blm_docs[Set_Name!='Background Documents',]
+
 blm_docs = blm_docs[!grepl('App',File_Name),]
 blm_docs = blm_docs[!grepl('Final_EA_Figures',File_Name),]
 
@@ -444,9 +433,7 @@ blm_docs = blm_docs[!grepl('^Figure',File_Name),]
 blm_docs = blm_docs[!grepl('_MAP\\.pdf$',File_Name),]
 blm_docs = blm_docs[!grepl('DECISION_RECORD',toupper(File_Name)),]
 blm_docs = blm_docs[!grepl('^NEWS',toupper(File_Name)),]
-
 blm_docs = blm_docs[!grepl('ISSUE_MAPS',toupper(File_Name)),]
-
 
 
 blm_docs = blm_docs[NEPA_ID!='DOI-BLM-CO-N050-2019-0040-EA'|File_Name=='NW_District_EA_September2019.pdf',]
@@ -460,10 +447,6 @@ blm_docs = blm_docs[!NEPA_ID%in%blm_docs[,list(sum(grepl('EA\\.pdf$',File_Name))
 
 blm_docs = blm_docs[!NEPA_ID%in%blm_docs[,list(sum(grepl('^DR',File_Name)),sum(grepl('EA-FONSI',File_Name)),sum(grepl('(^|_|-|\\s|FINAL)(EA|FEA)($|_|-|\\s)|ENVIRONMENTAL(_|-|\\s|)ASSESSMENT',File_Name)&!grepl('^DR|EA-FONSI',File_Name))),by=.(NEPA_ID)][{V1>0|V2>0}&V3>0,]$NEPA_ID|
                       grepl('(^|_|-|\\s|FINAL)(EA|FEA)($|_|-|\\s)|ENVIRONMENTAL(_|-|\\s|)ASSESSMENT',File_Name)&!grepl('^DR|EA-FONSI',File_Name),]
-
-
-
-
 
 
 blm_docs = blm_docs[toupper(`Document Name`)!='DECISION RECORD',]
@@ -515,10 +498,6 @@ blm_docs = blm_docs[!grepl('HEARING',toupper(File_Name)),]
 blm_docs = blm_docs[!grepl('EXHIBITS',toupper(File_Name)),]
 
 #blm_docs = blm_docs[!grepl('^[0-9]{8}(\\s|_)(APPENDIX|APPX|APPENDICES)|BIOP|SURVEY|SUPPLEMENT|EVALUATION|CONCEPT PLANS|DELINEATION|LETTER|DECISION REPORT|INITIAL SITE|RTE_RPT|HEARING|APPENDIX\\.PDF$|EXHIBITS|DEIS|DRAFT|MAP|COMMENTS|RESPONSE|RESOURCEREPORT|POWERPOINT|STUDY|BUDGET|MEETING|MINUTES|FONSI|FIGURE|TECHNICAL(\\s|_)MEMORANDUM|FINDING(\\s|_)OF(\\s|_)NO(\\s|_)SIGNIFICANT|RECORD(\\s|_)OF(\\s|_)DECISION|TABLE(\\s|_)OF(\\s|_)CONTENTS',toupper(FILE_NAME))&!grepl('GRSA DEA|_EIR\\+EA\\+EA_508',toupper(FILE_NAME)),]
-
-
-
-
 
 blm_docs$kbsize = as.numeric(str_remove_all(blm_docs$`Available Formats`,'\\(|\\)|\\sKB'))
 blm_docs$kbsize[!is.na(blm_docs$kbsize)&blm_docs$kbsize==0] <- NA
@@ -643,37 +622,6 @@ blm_docs = rbind(solo_docs,multi_docs,use.names = T)
 
 
 
-#blm$Year[is.na(blm$Year)] <- year(mdy(blm$`Decision Date`[is.na(blm$Year)]))
-#blm = blm[`Project Status` %in% c('Completed','Withdrawn','Closed','Decision and Appeal','Decision and Protest','Comment and Review Period'),]
-#blm$Year[grepl('EIS',blm$`Doc Type`)] <- epa$Year[match(blm$`Project Name`[grepl('EIS',blm$`Doc Type`)],epa$Title)]
-
-
-
-
-#single_docs = blm_docs[,.N,by = NEPA_ID][N==1,]
-#keep = which(blm_docs$NEPA_ID %in% single_docs$NEPA_ID)
-#keep = unique(c(keep,which(blm_docs$`Document Name` %in% c('Final Environmental Impact Statement','Environmental Impact Statement','Environmental Assessment','Final Environmental Assessment','EA'))))
-#keep = unique(c(keep,!grepl('News Release',blm_docs$`Document Name`)))
-#keep = unique(c(keep,which(grepl('Environmental Assessment|^EA|Print',blm_docs$`Document Name`)&!grepl('Draft',blm_docs$`Document Name`))))
-#keep = unique(c(keep,which(grepl('final|Final',blm_docs$`Document Name`)&grepl('EA',blm_docs$`Document Name`))))
-#keep = unique(c(keep,grep('EA\\.docx$|^EA_|-EA\\.|_EA_|-EA-|_EA-|-EA_|EA\\.pdf$|[^a-z]ea\\.pdf$|Environmental_Assessment|[^A-Z]EA[^A-Z]|ea_Final',blm_docs$File_Name)))
-#keep = unique(c(keep,which(grepl('Chapter|FEIS|Final EIS',blm_docs$`Document Name`)&blm_docs$NEPA_ID %in% blm_eis)))
-# 
-# miss = blm$`NEPA #`[!blm$`NEPA #` %in% blm_docs$NEPA_ID[keep] & blm$`NEPA #`  %in% blm_docs$NEPA_ID]
-# base_loc = '../eis_documents/agency_nepa_libraries/blm/nepa_documents/'
-# 
-# for(i in miss){
-#   tfiles = blm_docs$File_Name[blm_docs$NEPA_ID==i]
-#   tyears = blm_docs$Year[blm_docs$NEPA_ID==i]
-#   temp_finfo = file.info(paste0(base_loc,tyears,'/',i,'_',tfiles))
-#   largest = tfiles[which.max(temp_finfo$size)]
-#   keep = unique(c(keep,which(paste(blm_docs$NEPA_ID,blm_docs$File_Name,sep = '_') == paste(i,largest,sep = '_'))))
-# }
-
-#blm_docs[NEPA_ID=='DOI-BLM-WY-D040-2017-0008-EA',]
-#blm_docs[keep,][NEPA_ID=='DOI-BLM-WY-D040-2017-0008-EA',]
-#blm_docs = blm_docs[keep,]
-
 blm_docs$`Document Name` <- gsub('--','-',blm_docs$`Document Name`)
 blm_docs = blm_docs[!duplicated(paste(blm_docs$File_Name,blm_docs$NEPA_ID)),]
 
@@ -687,18 +635,6 @@ setnames(blm,c("NEPA #",'Year'),c('PROJECT_ID','YEAR'))
 setnames(blm_docs,c('NEPA_ID','File_Name'),c('PROJECT_ID','FILE_NAME'))
 
 
-
-
-
-#blm_docs = blm_docs[!grepl('^[0-9]{8}(\\s|_)(APPENDIX|APPX|APPENDICES)|BIOP|SURVEY|SUPPLEMENT|EVALUATION|CONCEPT PLANS|DELINEATION|LETTER|DECISION REPORT|INITIAL SITE|RTE_RPT|HEARING|APPENDIX\\.PDF$|EXHIBITS|DEIS|DRAFT|MAP|COMMENTS|RESPONSE|RESOURCEREPORT|POWERPOINT|STUDY|BUDGET|MEETING|MINUTES|FONSI|FIGURE|TECHNICAL(\\s|_)MEMORANDUM|FINDING(\\s|_)OF(\\s|_)NO(\\s|_)SIGNIFICANT|RECORD(\\s|_)OF(\\s|_)DECISION|TABLE(\\s|_)OF(\\s|_)CONTENTS',toupper(FILE_NAME))&!grepl('GRSA DEA|_EIR\\+EA\\+EA_508',toupper(FILE_NAME)),]
-#blm_docs = blm_docs[grep('App[A-Z]',FILE_NAME,invert = T),]
-#app_drops = which(grepl('Appendix|Appendices|appendix|appendices|appx|Appendice|Appenices|Appplendix|Applendices|APPENDIX|APPENDICES|Appedicies',blm_docs$FILE_NAME)&!grepl('and Appendix|to Appendix|Chapter|Front|Cover',blm_docs$FILE_NAME))
-#blm_docs = blm_docs[-app_drops,]
-#app_drops = which(grepl('App([A-Z]|\\.[1-9])|App\\s[A-Z]|(App|APP|Appx|Appndx|Appnd)(\\s|_|\\.|-)[A-Z1-9]|APX(\\s|_|\\.|-)[A-Z1-9]|Apps[A-Z]|Appdx|Appedix|Appdcs(_|\\.|\\s)[0-9A-Z]|(A|a)ppend[A-Z]',blm_docs$FILE_NAME)&!grepl('Front.*to_App\\.1|withAppA|and_App(\\s|_|)A|Chapter|Cover|wApp|Front',blm_docs$FILE_NAME))
-#blm_docs = blm_docs[-app_drops,]
-
-#keep_final = intersect(blm_docs$PROJECT_ID[blm_docs$`Document Name`=='Final Environmental Assessment'],blm_docs$PROJECT_ID[blm_docs$`Document Name`%in%c('Environmental Assessment','Draft Environmental Assessment')])
-#blm_docs = blm_docs[!PROJECT_ID %in% keep_final|`Document Name`=='Final Environmental Assessment',]
 
 
 keep_second_doc = intersect(blm_docs$PROJECT_ID[grepl('V1|v1|V\\.1|v\\.1',blm_docs$`Document Name`)],blm_docs$PROJECT_ID[grepl('V2|v2|V\\.2|v\\.2',blm_docs$`Document Name`)])
@@ -736,6 +672,34 @@ blm_docs$FILE_NAME = paste0(blm_docs$PROJECT_ID,'--',gsub('\\.PDF$|\\.pdf$|\\.do
 
 blm_sub_docs = blm_docs[,.(PROJECT_ID,YEAR,FILE_NAME,FILE_LOC,PROJECT_TYPE,AGENCY)]
 
+ex = file.exists(paste(blm_sub_docs$FILE_LOC,blm_sub_docs$FILE_NAME,sep = '/'))
+
+blm_sub_docs = blm_sub_docs[ex,]
+require(pbapply)
+blm_docs_split = split(blm_sub_docs,blm_sub_docs$PROJECT_ID)
+blm_docs_split  = blm_docs_split[sapply(blm_docs_split ,nrow)>1]
+drop_list = pblapply(seq_along(blm_docs_split),function(f){
+  bos = combn(paste(blm_docs_split[[f]]$FILE_LOC,blm_docs_split[[f]]$FILE_NAME,sep ='/'),2,simplify = F)
+  text_list = lapply(bos,function(a) lapply(a,function(b) fread(b)$text))
+  for(t in seq_along(text_list)){
+    distmat = stringdist::stringdistmatrix(text_list[[t]][[1]],text_list[[t]][[2]],method = 'qgram')
+    min_loc =apply(distmat,1,which.min)
+    run = rle(diff(min_loc)==1)
+    if(any(run$values)){
+      props = max(run$lengths[run$values])/c(length(text_list[[t]][[1]]),length(text_list[[t]][[2]]))
+      if(sum(props>0.5)==1){return(bos[[t]][props>0.5])}
+      if(sum(props>0.5)==2){return(bos[[t]][which.min(c(length(text_list[[t]][[1]]),length(text_list[[t]][[2]])))])}
+      else{return(NULL)}
+    }
+  }
+},cl = 5)
+gc()
+
+
+blm_sub_docs = blm_sub_docs[!FILE_NAME %in% basename(unlist(drop_list)),]
+
+
+
 blm_sub$MASTER_ID = blm_sub$PROJECT_ID
 blm_sub_docs$MASTER_ID = blm_sub_docs$PROJECT_ID
 
@@ -745,6 +709,7 @@ eis_blm$EIS.Number = epa$EIS.Number[match(eis_blm$`Project Name`,epa$Title)]
 blm_sub$MASTER_ID[blm_sub$PROJECT_ID %in% eis_blm$PROJECT_ID] <- eis_blm$EIS.Number[match(blm_sub$MASTER_ID[blm_sub$PROJECT_ID %in% eis_blm$PROJECT_ID],eis_blm$PROJECT_ID)]
 
 blm_sub_docs$MASTER_ID <- blm_sub$MASTER_ID[match(blm_sub_docs$PROJECT_ID,blm_sub$PROJECT_ID)]
+
 
 
 # ###############
