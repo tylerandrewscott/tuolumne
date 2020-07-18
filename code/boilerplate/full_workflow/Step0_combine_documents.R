@@ -537,6 +537,11 @@ solo_docs = rbind(solo_docs,
 multi_docs = multi_docs[!NEPA_ID %in% solo_docs$NEPA_ID,]
 
 
+one_finalEA = multi_docs[grepl('FINAL',toupper(File_Name))&grepl('(EA|FEA)',File_Name),][,.N,by=.(NEPA_ID)][N==1,]$NEPA_ID
+solo_docs = rbind(solo_docs,
+                  multi_docs[NEPA_ID %in% one_finalEA & grepl('FINAL',toupper(File_Name))&grepl('(EA|FEA)',File_Name),])
+multi_docs = multi_docs[!NEPA_ID %in% solo_docs$NEPA_ID,]
+
 
 one_nondecEA = multi_docs[grepl('(^|_|-|\\s)(EA|FEA)($|_|-|\\s|\\.|FINAL)|ENVIRONMENTAL(_|-|\\s|)ASSESSMENT',toupper(`Document Name`))&!grepl('DECISION',toupper(`Document Name`)),][,.N,by=.(NEPA_ID)][N==1,]$NEPA_ID
 solo_docs = rbind(solo_docs,
@@ -618,8 +623,6 @@ multi_docs = multi_docs[!NEPA_ID %in% solo_docs$NEPA_ID,]
 ##############################################
 
 blm_docs = rbind(solo_docs,multi_docs,use.names = T)
-
-
 
 
 blm_docs$`Document Name` <- gsub('--','-',blm_docs$`Document Name`)
