@@ -1,0 +1,23 @@
+{
+  "token_vector_width":128,
+  "hist_size":0,
+  "cnn_maxout_pieces":3,
+  "nr_class":73,
+  "maxout_pieces":2,
+  "hidden_width":200,
+  "hidden_depth":1,
+  "hist_width":0,
+  "beam_density":0.0,
+  "extra_labels":[
+    "PROJ_ALT",
+    "PROJ_ALT",
+    "PROJ_ALT",
+    "PROJ_ALT"
+  ],
+  "pretrained_vectors":"en_core_web_lg.vectors",
+  "deprecation_fixes":{
+    "vectors_name":"en_core_web_lg.vectors"
+  },
+  "pretrained_dims":300,
+  "beam_width":1
+}

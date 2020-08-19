@@ -1,0 +1,10 @@
+{
+  "blacklist":true,
+  "max_dist_match":500,
+  "max_dist":20,
+  "h2":500,
+  "greedyness":0.5,
+  "conv_dict":null,
+  "h1":1000,
+  "h3":500
+}

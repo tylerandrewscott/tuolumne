@@ -1,5 +1,10 @@
-# Ignore everything in the root
-/*
+
 # Un-ignore all of subtree
 !/code/
 !.gitignore
+
+deliverables/
+input/
+scratch/
+output/
+
