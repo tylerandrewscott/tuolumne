@@ -80,7 +80,7 @@ figure3 = ggplot(dft2) +
   geom_path(aes(x = YEAR,y = N, colour = InfraType,group = InfraType)) +
   geom_point(aes(x = YEAR,y = N, colour = InfraType,shape = InfraType),size = 2) +
   scale_color_colorblind(name = '') + theme_bw() + 
-  geom_vline(xintercept = c(1988,1992,2000,2008),lty = 2,col = 'grey50') + 
+  geom_vline(xintercept = c(1988,1992,2000,2008,2016),lty = 2,col = 'grey50') + 
   scale_x_continuous(breaks=seq(1987,2017,5)) + scale_y_continuous(breaks=seq(0,300,50),limits=c(0,300),expand=c(0,0),'# FEISs published')+
   theme(legend.position = c(0.85,0.8),text = element_text(family = 'Times'),
         legend.background = element_rect(fill = alpha('white',0.5)),

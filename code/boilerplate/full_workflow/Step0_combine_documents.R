@@ -13,16 +13,19 @@ empty_doc_dt = data.table(YEAR = numeric(),FILE_NAME = character(), FILE_LOC = c
 
 
 epa = fread('../eis_documents/enepa_repository/meta_data/eis_record_detail.csv')
+epa = epa[Document=='Final',]
 
 epa = epa[grepl('^201[3-9]',epa$EIS.Number),]
 
 #epa = epa[Agency=='Bureau of Land Management',]
-epa = epa[Document=='Final',]
+
 epa$Title = iconv(epa$Title,'utf8')
 epa$Year = str_extract(epa$EIS.Number,'^[0-9]{4}')
 epa  = epa[!grepl('ADOPTION|WITHDRAWN|^Withdrawn|^Adoption',Title)&!grepl('PRO',State.or.Territory),]
 epa = epa[!EIS.Number%in% c('20170008','20170006'),]
 #epa = epa[!EIS.Number%in%c(20170006,20170006),]
+
+
 
 epa$Agency[epa$Agency %in% c('Bonneville Power Administration','Western Area Power Administration')] <- 'Department of Energy'
 
