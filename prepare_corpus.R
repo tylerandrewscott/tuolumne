@@ -49,6 +49,7 @@ stopword_splits = split(stopword_breaks,dplyr::ntile(stopword_breaks,n = 20))
 stopword_splits <- lapply(stopword_splits,paste,collapse = '|')
 
 
+
 for(year in names(year_splits)){
   print(year)
   temp_ids = year_splits[[year]]
@@ -60,9 +61,9 @@ for(year in names(year_splits)){
     id = str_extract(file,'^[0-9]{8}')
     raw_pars = readLines(paste0(text_loc,file))
     pars = raw_pars#tokenize_paragraphs(raw_pars,paragraph_break = '.\n',simplify = T)
-    for(i in length(stopword_splits)){
+    for(i in 1:length(stopword_splits)){
       pars = str_remove_all(pars,pattern = stopword_splits[[i]])
-      }
+    }
     pars = tolower(pars)
     pars = removePunctuation(pars)
     pars = removeNumbers(pars)
@@ -74,7 +75,7 @@ for(year in names(year_splits)){
   toks = tokens_select(toks,pattern = stopwords("en"),selection = 'remove')
   compound_words = c("greenhouse gas*",'climate change*','global warming','carbon emission*','climate impact*','ocean acidification*',
                      'alternative energy','anthropogenic emissions','carbon dioxide','extreme weather','storm surge',
-                     'adaptive capacity','adaptation costs','renewable energy',
+                     'adaptive capacity','adaptation costs','renewable energy','sea level rise',
                      'sealevel rise','air quality','water quality','invasive species','land use',
                      'environmental impact statement*')
   toks = tokens_select(toks,min_nchar = 3,max_nchar = max(nchar(compound_words)))
