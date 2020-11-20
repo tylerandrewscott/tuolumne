@@ -5,10 +5,12 @@ library(data.table)
 library(stringr)
 library(lolog)
 library(textreuse)
-install.packages('textreuse')
+
 text_storage = 'input/filtered_text_files/'
 flist = list.files(text_storage)
 lda_result_file = 'scratch/boilerplate/lda_combo_results.RDS'
+
+list.files('scratch/boilerplate/reuse/')
 lda = readRDS(lda_result_file)
 lda$score = as.numeric(lda$score)
 lda$a_id = str_remove(lda$a,'--.*')
