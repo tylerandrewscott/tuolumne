@@ -61,13 +61,15 @@ if(rerun_existing|!file.exists(hash_file)){
   full_tlist = unlist(tlist)
   rm(tlist)
   gc()
-  saveRDS(full_tlist,'scratch/paragraph_list.rds')
+  #saveRDS(full_tlist,'scratch/paragraph_list.rds')
+  full_tlist <- readRDS('../bucket_mount/paragraph_list.rds')
   eis_corpus =  TextReuseCorpus(text = full_tlist,
                                 meta = list(ID = names(full_tlist)),
                                 tokenizer = tokenize_ngrams, n = 10,
                                 minhash_func = minhash, keep_tokens = TRUE,
                                 progress = progress_bars,skip_short = T)
-  eis_buckets <- lsh(eis_corpus, bands = 40, progress = progress_bars)
+  saveRDS(eis_corpus,'../bucket_mount/scratch/eis_corp_scratch.rds')
+  eis_buckets <- lsh(eis_corpus, bands = 80, progress = progress_bars)
   eis_candidates <- lsh_candidates(eis_buckets)
   
   
