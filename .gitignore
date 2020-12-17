@@ -8,3 +8,6 @@ input/
 scratch/
 output/
 
+.DS_Store
+*.pper
+.Rproj.user*
