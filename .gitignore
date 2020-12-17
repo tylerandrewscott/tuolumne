@@ -11,3 +11,5 @@ output/
 .DS_Store
 *.pper
 .Rproj.user*
+=======
+.Rproj.user
