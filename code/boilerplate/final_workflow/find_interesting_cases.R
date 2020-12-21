@@ -7,16 +7,7 @@ library(lolog)
 library(textreuse)
 
 
-lda_result_file = '../bucket_mount/tuolumne/scratch/boilerplate/lda'
-lda = readRDS(lda_result_file)
-
-
-
-text_storage = 'input/filtered_text_files/'
-flist = list.files(text_storage)
-lda_result_file = 'scratch/boilerplate/lda_combo_results.RDS'
-
-list.files('scratch/boilerplate/reuse/')
+lda_result_file = 'scratch/boilerplate/lda_combo_results_V2.RDS'
 lda = readRDS(lda_result_file)
 lda$score = as.numeric(lda$score)
 lda$a_id = str_remove(lda$a,'--.*')
@@ -25,6 +16,30 @@ lda$p1 = as.numeric(gsub('--','',str_extract(lda$a,'--[0-9]{1,}$')))
 lda$p2 = as.numeric(gsub('--','',str_extract(lda$b,'--[0-9]{1,}$')))
 lda$f1 = paste0(str_remove(lda$a,'--[0-9]{1,}$'),'.txt')
 lda$f2 = paste0(str_remove(lda$b,'--[0-9]{1,}$'),'.txt')
+
+eis = fread('scratch/boilerplate/project_candidates_eis_only.csv')
+
+lda300 = lda[a_id %in% eis$EIS.Number&b_id %in% eis$EIS.Number& score>300,]
+lda300$a_agency = eis$AGENCY[match(lda300$a_id,eis$EIS.Number)]
+lda300$b_agency = eis$AGENCY[match(lda300$b_id,eis$EIS.Number)]
+lda300_separate_agency = lda300[a_agency!=b_agency,]
+
+
+lda300_separate_agency[,.N,by=.(a_id,b_id,a_agency,b_agency)][order(-N)][N>1,]
+
+
+lda[a_id=='20130383'&b_id=='20150091',]
+lda[score>300,]
+
+
+
+text_storage = 'input/filtered_text_files/'
+flist = list.files(text_storage)
+
+
+list.files('scratch/boilerplate/reuse/')
+lda = readRDS(lda_result_file)
+
 
 sample_score = 800
 show_example = lda[score>sample_score&a_id!=b_id,][a_id %in% projects_used$PROJECT_ID[projects_used$PROJECT_TYPE=='EIS'] & b_id %in% projects_used$PROJECT_ID[projects_used$PROJECT_TYPE=='EIS'],]
