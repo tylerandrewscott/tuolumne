@@ -2,10 +2,7 @@
 library(data.table)
 library(tidyverse)
 #setwd('Box/tuolumne/')
-            
-docgroups = fread('scratch/boilerplate/document_candidates_eis_only.csv')
-
-
+ 
 projects = fread('scratch/boilerplate/project_candidates_eis_only.csv')
 docgroups = docgroups[!duplicated(docgroups)]
 
