@@ -52,8 +52,6 @@ parallel::clusterEvalQ(cluster,'require(data.table)')
 
 #####
 hash_file = paste0(scratch_loc,'eis_page_hash_paragraph_candidates.RDS')
-if(rerun_existing|!file.exists(hash_file)){
-
   tlist = foreach(i = seq_along(flist)) %dopar% {
     t1 = readLines(paste0(tokpars,flist[i]))
     t1}
@@ -63,39 +61,5 @@ if(rerun_existing|!file.exists(hash_file)){
   rm(tlist)
   gc()
   #saveRDS(full_tlist,'scratch/paragraph_list.rds')
-  full_tlist <- readRDS('../bucket_mount/paragraph_list.rds')
-  eis_corpus =  TextReuseCorpus(text = full_tlist,
-                                meta = list(ID = names(full_tlist)),
-                                tokenizer = tokenize_ngrams, n = 10,
-                                minhash_func = minhash, keep_tokens = TRUE,
-                                progress = progress_bars,skip_short = T)
-  saveRDS(eis_corpus,'../bucket_mount/scratch/eis_corp_scratch.rds')
-  eis_buckets <- lsh(eis_corpus, bands = 20, progress = progress_bars)
-  eis_candidates <- lsh_candidates(eis_buckets)
-}
-  
-  
-  eis_flist = flist[gsub('--','',str_extract(flist,'--.+\\.(PDF|pdf)')) %in% documents$FILE_NAME[documents$PROJECT_TYPE=='EIS']]
-  floc = 'input/filtered_text_files/'
-  fls = paste0(floc,eis_flist)
-  tlist = foreach(i = seq_along(fls)) %dopar% {
-    t1 = data.table::fread(fls[i],sep ='\t');
-    t2 = t1$text;names(t2) <- t1$Project_File_Par
-    t2}
-  text_set = unlist(tlist)
-  keep = which(nchar(text_set)>=750)
-  
-  eis_corpus =  TextReuseCorpus(text = text_set[keep],
-                                meta = list(Project_File_Par = names(text_set)[keep],PROJECT_ID = str_remove(names(text_set)[keep],'--.*')),
-                                tokenizer = tokenize_ngrams, n = 10,
-                                minhash_func = minhash, keep_tokens = TRUE,
-                                progress = progress_bars,skip_short = T)
-  eis_buckets <- lsh(eis_corpus, bands = 40, progress = progress_bars)
-  eis_candidates <- lsh_candidates(eis_buckets)
-  #eis_candidates$a = text_names[keep][as.numeric(str_extract(eis_candidates$a,'[0-9]{1,}'))]
-  #eis_candidates$b = text_names[keep][as.numeric(str_extract(eis_candidates$b,'[0-9]{1,}'))]
-  saveRDS(eis_candidates,hash_file)
-}
-
-
-
+  #full_tlist <- readRDS('../bucket_mount/paragraph_list.rds')
+ 
