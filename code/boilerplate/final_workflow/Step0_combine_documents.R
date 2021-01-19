@@ -56,8 +56,10 @@ epa = epa[Agency %in% epa[,.N,Agency][order(N),][N>=5,]$Agency,]
 
 doc_url = '../eis_documents/enepa_repository/meta_data/eis_document_record.csv'
 epa_docs = fread(doc_url)
+
 doc_url2 = '../eis_documents/enepa_repository/meta_data/extra_docs.csv'
 epa_docs2 = fread(doc_url2)
+
 epa_docs = rbindlist(list(epa_docs,epa_docs2),fill=T)
 
 epa_docs = epa_docs[EIS.Number %in% epa$EIS.Number,]
@@ -102,8 +104,6 @@ fwrite(projects,file = 'scratch/boilerplate/project_candidates_eis_only.csv')
 fwrite(documents,file = 'scratch/boilerplate/document_candidates_eis_only.csv')
 
 
-list.files('scratch/full_text_documents/',pattern = '20200254')
-list.files('scratch/tokenized_paragraphs/',pattern = '20200254')
 
 htmlTable(epa[,list(sum(PROJECT_ID %in% epa_sub$PROJECT_ID),.N),by=.(Agency)][order(-N)])
 #htmlTable(projects[,list(sum(PROJECT_ID %in% documents$PROJECT_ID|MASTER_ID %in% documents$PROJECT_ID),.N),by = .(AGENCY,PROJECT_TYPE)][order(-N)])
