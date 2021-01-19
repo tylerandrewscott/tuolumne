@@ -12,7 +12,6 @@ docgroups = docgroups[!duplicated(docgroups)]
 
 #docgroups$FILE_NAME = gsub('\\s','_',docgroups$FILE_NAME)
 
-doe_docs = docgroups[AGENCY=='Department of Energy',]
 
 have_pdf = doe_docs[file.exists(paste(doe_docs$FILE_LOC,doe_docs$FILE_NAME,sep = '/')),]
 
