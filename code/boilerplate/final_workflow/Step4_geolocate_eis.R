@@ -25,7 +25,7 @@ cl = makeCluster(cors)
 registerDoParallel(cl)
 
 full_tlist <- readRDS('../bucket_mount/big_eis_text.rds')
-top20pages = full_tlist[Page %in% 1:20,]
+top40pages = full_tlist[Page %in% 1:40,]
 
 
 county_tigris = tigris::counties(class = 'sf',year = '2016')
@@ -59,12 +59,73 @@ clusterEvalQ(cl,{require(spacyr);require(data.table);
 
 clusterExport(cl , list('ngaz'))
 
+clusterEvalQ(cl,{require(stringr)})
 
+top40pages[grepl("^20190044",File),]
 
 #table(file.exists(paste0(ent_loc,projects_used$PROJECT_ID,'.txt')))
-fips_matches = foreach(i = findset) %dopar% {
-  rm(df)
-  id = projects_used$PROJECT_ID[i]
+fips_matches = foreach(i = top40pages$text[!str_remove(top40pages$File,'_.*') %in% geomatches$PROJECT_ID],j = top40pages$File[!str_remove(top40pages$File,'_.*') %in% geomatches$PROJECT_ID]) %dopar% {
+   
+  
+  full_tlist[grepl('20160157',File),]
+  
+  oh 20160157
+fips_matches = foreach(i = top40pages$text[!str_remove(top40pages$File,'_.*') %in% geomatches$PROJECT_ID],j = top40pages$File[!str_remove(top40pages$File,'_.*') %in% geomatches$PROJECT_ID]) %dopar% {
+    i = top40pages$text[grepl('^20160157',top40pages$File)][1]
+  
+    top40pages$text[grepl('^20160157',top40pages$File)][1]
+projects[PROJECT_ID=='20160157']
+    id = str_remove(j,'_.*')
+  pars = spacy_parse(i,entity = T,dependency = T,full_parse = TRUE,lemma = F,pos = F,nounphrase = T)
+  ents = entity_consolidate(pars)
+  filter_ents = ents[ents$entity_type%in%c('GPE','LOC',"FAC"),]
+  states = unique(filter_ents$token[filter_ents$token %in% gsub('\\s','_',state.name)])
+  if(length(states)==0){states = gsub("'",'',unique(filter_ents$token[gsub("'",'',filter_ents$token) %in% state.name]))}
+  sab = state.abb[state.name %in% states]
+  ngaz_filter = ngaz[ngaz$STATE_ALPHA %in% sab,]
+  found_ents = filter_ents[filter_ents$token %in% ngaz_filter$FEATURE_NAME2,]
+  if(nrow(found_ents)>0){
+    found_ents$CFIPS <- ngaz_filter$CFIPS[match(found_ents$token,ngaz_filter$FEATURE_NAME2)]
+    found_ents$FEATURE_ID <- ngaz_filter$FEATURE_ID[match(found_ents$token,ngaz_filter$FEATURE_NAME2)]
+    found_ents$PRIM_LONG_DEC <- ngaz_filter$PRIM_LONG_DEC[match(found_ents$token,ngaz_filter$FEATURE_NAME2)]
+    found_ents$PRIM_LAT_DEC <- ngaz_filter$PRIM_LAT_DEC[match(found_ents$token,ngaz_filter$FEATURE_NAME2)]
+    found_ents$PROJECT_ID = id
+  }
+  found_ents
+}
+
+
+rbindlist(fips_matches,fill =T,use.names = T)  
+geomatches = rbindlist(fips_matches,fill =T,use.names = T)  
+
+old_fips_matches[!PROJECT_ID %in% geomatches$PROJECT_ID,][!duplicated(PROJECT_ID),]
+
+old_fips_matches = readRDS('../bucket_mount/tuolumne/scratch/ngaz_matches.RDS')
+old_fips_matches = old_fips_matches[PROJECT_ID %in% projects$PROJECT_ID,]
+
+old_fips_matches[!PROJECT_ID %in% geomatches$PROJECT_ID,]
+
+findset = which(!projects_used$PROJECT_ID %in% old_fips_matches$PROJECT_ID)
+
+ent_loc = 'scratch/boilerplate/project_place_entiities/'
+test = list.files(ent_loc)
+
+
+#table(projects$AGENCY,projects$PROJECT_TYPE)
+projects = fread('../bucket_mount/tuolumne/scratch/boilerplate/project_candidates_eis_only.csv')
+projects = projects[Document=='Final',]
+projects = projects[grepl('^201[3-9]|^2020',PROJECT_ID),]
+documents = fread( '../bucket_mount/tuolumne/scratch/boilerplate/document_candidates_eis_only.csv')
+documents = documents[PROJECT_ID %in% projects$PROJECT_ID,]
+
+projects[!projects$PROJECT_ID %in% geomatches$PROJECT_ID,]
+
+table(projects$PROJECT_ID %in% unique(str_remove(full_tlist$File,'_.*')))
+full_tlist[grepl('20130090',File),]
+
+id = projects_used$PROJECT_ID[i]
+  
+  
   if(!file.exists(paste0(ent_loc,id,'.txt'))){
     print(i)
     pfiles = files_used[PROJECT_ID == id,]
