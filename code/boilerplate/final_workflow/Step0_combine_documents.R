@@ -103,8 +103,6 @@ documents <- documents[!duplicated(documents),]
 fwrite(projects,file = 'scratch/boilerplate/project_candidates_eis_only.csv')
 fwrite(documents,file = 'scratch/boilerplate/document_candidates_eis_only.csv')
 
-
-
 htmlTable(epa[,list(sum(PROJECT_ID %in% epa_sub$PROJECT_ID),.N),by=.(Agency)][order(-N)])
 #htmlTable(projects[,list(sum(PROJECT_ID %in% documents$PROJECT_ID|MASTER_ID %in% documents$PROJECT_ID),.N),by = .(AGENCY,PROJECT_TYPE)][order(-N)])
 
