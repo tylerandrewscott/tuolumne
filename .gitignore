@@ -13,3 +13,5 @@ output/
 .Rproj.user*
 =======
 .Rproj.user
+*.Rout
+*/*.Rout
