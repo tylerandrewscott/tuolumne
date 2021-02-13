@@ -75,8 +75,11 @@ epa_docs$AGENCY = epa$AGENCY[match(epa_docs$EIS.Number,epa$EIS.Number)]
 epa$PROJECT_ID = epa$EIS.Number
 
 epa_docs$PROJECT_ID = epa_docs$EIS.Number
-FILE_LOC = 'scratch/tokenized_paragraphs/'
-ex = file.exists(paste(FILE_LOC,gsub('pdf$|PDF$','txt',epa_docs$File_Name),sep='/'))
+text_flist = list.files('../eis_documents/enepa_repository/text_as_datatable/',recursive = T)
+
+
+ex = gsub('pdf$|PDF$','txt',epa_docs$File_Name) %in% basename(text_flist)
+
 epa_sub_docs = epa_docs[ex,]
 epa_sub = epa[PROJECT_ID %in% epa_sub_docs$PROJECT_ID,]
 epa_sub$MASTER_ID = epa_sub$PROJECT_ID
@@ -100,9 +103,9 @@ projects = projects[!duplicated(projects),]
 
 documents <- documents[!duplicated(documents),]
 
+
 fwrite(projects,file = 'scratch/boilerplate/project_candidates_eis_only.csv')
 fwrite(documents,file = 'scratch/boilerplate/document_candidates_eis_only.csv')
-
 
 htmlTable(epa[,list(sum(PROJECT_ID %in% epa_sub$PROJECT_ID),.N),by=.(Agency)][order(-N)])
 #htmlTable(projects[,list(sum(PROJECT_ID %in% documents$PROJECT_ID|MASTER_ID %in% documents$PROJECT_ID),.N),by = .(AGENCY,PROJECT_TYPE)][order(-N)])
