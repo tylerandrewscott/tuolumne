@@ -103,7 +103,7 @@ projects = projects[!duplicated(projects),]
 
 documents <- documents[!duplicated(documents),]
 
-
+documents = documents[!{grepl('\\(',documents$FILE_NAME) &!grepl('\\)',documents$FILE_NAME)},]
 fwrite(projects,file = 'scratch/boilerplate/project_candidates_eis_only.csv')
 fwrite(documents,file = 'scratch/boilerplate/document_candidates_eis_only.csv')
 

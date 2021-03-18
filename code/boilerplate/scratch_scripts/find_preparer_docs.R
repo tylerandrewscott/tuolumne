@@ -15,13 +15,8 @@ stc = paste(c(stringcombos,toupper(stringcombos)),collapse='|')
 stc = paste0(stc,'|PREPARERS|CONSULTANT TEAM')
 
 flist = list.files('../eis_documents/enepa_repository/text_as_datatable/',full.names = T,recursive = T)
-flist2 = list.files('../eis_documents/agency_nepa_libraries/usfs/text_as_datatable/',full.names = T,recursive = T)
-flist3 = list.files('../eis_documents/agency_nepa_libraries/blm/text_as_datatable/',full.names = T,recursive = T)
-flist4 = list.files('../eis_documents/agency_nepa_libraries/doe/text_as_datatable/',full.names = T,recursive = T)
-
-flist = do.call('c',list(flist,flist2,flist3,flist4))
 flist_ids = str_remove(basename(flist),'(_|--).*')
-projs = fread('scratch/boilerplate/project_candidates.csv')
+projs = fread('scratch/boilerplate/project_candidates_eis_only.csv')
 
 prep_file = 'scratch/boilerplate/preparer_pages.rds'
 if(file.exists(prep_file)){prep_dt = readRDS(prep_file)}else{prep_dt = data.table()}
