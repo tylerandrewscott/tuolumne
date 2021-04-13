@@ -23,7 +23,9 @@ epa = epa[Document=='Final',]
 epa$Title = iconv(epa$Title,'utf8')
 epa$Year = str_extract(epa$EIS.Number,'^[0-9]{4}')
 epa = epa[as.numeric(Year) %in% 2013:2020,]
-epa  = epa[!grepl('ADOPTION|WITHDRAWN|^Withdrawn|^Adoption|^PROG',Title)&!grepl('PRO',State.or.Territory),]
+
+grep('PROG',epa$Title,value = T)
+epa  = epa[!grepl('ADOPTION|WITHDRAWN|^Withdrawn|^Adoption',Title),]
 epa = epa[!EIS.Number%in% c('20170008','20170006'),]
 #epa = epa[!EIS.Number%in%c(20170006,20170006),]
 
@@ -53,6 +55,7 @@ epa$Agency[epa$Agency%in%c('Department of Health and Human Services','Food and D
 
 
 epa = epa[Agency %in% epa[,.N,Agency][order(N),][N>=5,]$Agency,]
+
 
 doc_url = '../eis_documents/enepa_repository/meta_data/eis_document_record.csv'
 epa_docs = fread(doc_url)

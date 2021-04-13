@@ -7,6 +7,7 @@ if(!require(stringr)){install.packages('stringr');require(stringr)}
 if(!require(tidyverse)){install.packages('tidyverse');require(tidyverse)}
 if(!require(pdftools)){install.packages('pdftools');require(pdftools)}
 if(!require(googleLanguageR)){install.packages('googleLanguageR')}
+if(!require(rvest)){install.packages('rvest')}
 #setwd('bucket_mount/tuolumne/')
 
 project = 'scott-davis-remote'
@@ -31,7 +32,6 @@ tlist = list.files('../eis_documents/enepa_repository/text_as_datatable/',full.n
 files_used$FILE_NAME <- str_replace(files_used$FILE_NAME,'\\.pdf$','\\.txt')
 #files_used = files_used[!FILE_NAME %in% ents$FILE_NAME,]
 keep_tlist = tlist[basename(tlist) %in% files_used$FILE_NAME]
-
 
 
 pages_list = pblapply(keep_tlist,function(i) {
@@ -66,9 +66,7 @@ pages_list = pblapply(keep_tlist,function(i) {
 pages_dt = rbindlist(pages_list,use.names = T)
 pages_dt$USE_KEEP2 = pages_dt$FILE %in% pages_dt[,list(sum(keep),sum(keep2)),by=.(FILE)][V1>10&V2>0]$FILE
 
-
 pages_dt = pages_dt[{!USE_KEEP2}|keep2==1,]
-
 
 
 
@@ -254,10 +252,6 @@ other_consultants =  c("STRATIFIED ENVIRONMENTAL & ARCHAEOLOGICAL SERVICES, LLC"
 
 
 ### make consult matrix ####
-
-
-
-
  enr2019_1 = 'https://www.enr.com/toplists/2019-Top-200-Environmental-Firms-1'
  enr2019_2 = 'https://www.enr.com/toplists/2019-Top-200-Environmental-Firms-2'
  enr2018_1 = 'https://www.enr.com/toplists/2018-Top-200-Environmental-Firms-1'
@@ -310,17 +304,12 @@ des2017_1 = 'https://www.enr.com/toplists/2017-Top-500-Design-Firms1'
 
  names(firm_scrapes)<-firm_lists
 
- sapply(firm_scrapes,function(x) sum(grepl('Cardno|CARDNO',x)))
- 
- 
 saveRDS(firm_scrapes,'scratch/enr_firm_lists.RDS')
 
 firm_scrapes = readRDS('scratch/enr_firm_lists.RDS')
 nms = unlist(firm_scrapes)
 
 
-
-grep('CARDNO|Cardno',nms,value = T)
 clean_names = unique(str_remove(nms,'\\,.+'))
 clean_names = unique(str_remove(clean_names,'\\s\\(.+'))
 clean_names = gsub('|','\\|',clean_names,fixed = T)
@@ -334,6 +323,8 @@ saveRDS(person_dt,'scratch/boilerplate/person_entities_extracted.RDS')
 #length(unique(toupper(clean_names)))
 #orgs$token = orgs$token
 orgs = ent_dt
+
+
 orgs$token[grep('CDM\\b|CDM SM',orgs$token)] <- 'CDM SMITH'
 orgs = orgs[grepl('[A-Z]',token,perl = T),]
 orgs = orgs[!grepl('http',token,perl = T),]
@@ -347,7 +338,7 @@ orgs = orgs[nchar(orgs$token)>1,]
 orgs = orgs[str_count(orgs$token,'[0-9]')<=2,]
 orgs = orgs[!tolower(orgs$token) %in% stopwords::stopwords(),]
 
-orgs = orgs[!token%in%c('EIR',"NPS","INC","NP","RMP","CEQA","USCS","USGS",'Page','Little',"PAGE","England"),]
+orgs = orgs[!token%in%c('EIR',"NPS","INC","NP","RMP","CEQA","USCS","USGS",'Page','Little',"PAGE","England",'Pond',"Wood",'Sam','SAM','Johnson','Fullerton','Payette'),]
 orgs = orgs[!token%in%state.abb,]
 
 orgs$NAME = toupper(orgs$token)
@@ -361,12 +352,11 @@ uq_tokens = unique(orgs$token);length(uq_tokens)
 mcores = 4
  match1 = pblapply(clean_names,function(x) {grep(paste0('\\b',x,'\\b'),uq_tokens,perl = T)})
  match2 = pblapply(tm::removePunctuation(clean_names),function(x) grep(paste0('\\b',x,'\\b'),uq_tokens,perl = T),cl = mcores)
- match3 = pblapply(str_remove(clean_names,'Inc\\.$|LLC$|LLC\\.$|Corp\\.$'),function(x) grep(paste0('\\b',x,'\\b'),uq_tokens,perl = T),cl = mcores)
+ match3 = pblapply(str_remove(clean_names,'\\s(Inc\\.$|LLC$|LLC\\.$|Corp\\.$)'),function(x) grep(paste0('\\b',x,'\\b'),uq_tokens,perl = T),cl = mcores)
  match1A = pblapply(toupper(clean_names),function(x) {grep(paste0('\\b',x,'\\b'),toupper(uq_tokens),perl = T)},cl = mcores)
  match2B = pblapply(tm::removePunctuation(toupper(clean_names)),function(x) grep(paste0('\\b',x,'\\b'),toupper(uq_tokens),perl = T),cl = mcores)
- match3C = pblapply(str_remove(toupper(clean_names),'INC\\.$|LLC$|LLC\\.$|CORP\\.$'),function(x) grep(paste0('\\b',x,'\\b'),toupper(uq_tokens),perl = T),cl = mcores)
-#
- 
+ match3C = pblapply(str_remove(toupper(clean_names),'\\s(INC\\.$|LLC$|LLC\\.$|CORP\\.$)'),function(x) grep(paste0('\\b',x,'\\b'),toupper(uq_tokens),perl = T),cl = mcores)
+
 # # # # #
 
 consult_matches = mapply(function(m1,m2,m3,m4,m5,m6) unique(c(m1,m2,m3,m4,m5,m6)),m1 = match1,m2 = match2,m3 = match3,m4 = match1A,m5 = match2B,m6 = match3C)
@@ -375,19 +365,61 @@ consult_dt = rbindlist(lapply(seq_along(clean_names),function(i) data.table(clea
 
 orgs$CONSULTANT <- consult_dt$V1[match(orgs$token,consult_dt$V2)]
 
-
-
-
 orgs$entity_type[orgs$CONSULTANT %in% c("CDM Smith","Parametrix","MOTT MACDONALD","Leidos",'WSP',"HNTB","Tetra Tech Inc.","Louis Berger","RK\\&K","Michael Baker International",
 "Black \\& Veatch","AECOM","ICF","GRAEF","Atkins North America","HDR")]<-'ORGANIZATION'
   
-
-grep("Cardno",clean_names,value = T)
 orgs[,.N,by=.(CONSULTANT,entity_type)][order(-N)][!is.na(CONSULTANT),][entity_type!='ORGANIZATION',][order(-N)][1:15,]
+orgs[,.N,by=.(CONSULTANT)][order(-N)][!is.na(CONSULTANT),][order(-N)][1:15,]
+
+
+fwrite(projects_used[,.(EIS.Number,AGENCY,EIS.Title)],'input/preparer_consultants.csv')
   
+
+
+
+
+consultants = orgs[!is.na(CONSULTANT),]
+consultants[,.N,by=.(CONSULTANT)][order(-N)][1:20,]
+
+ent_dt[grepl("Payette",token),]
+orgs[CONSULTANT=='Parsons',.(FILE,token)]
+
+grep('20190276',keep_tlist,value = T)
+stan_found = consultants[grepl('Stantec',CONSULTANT),]
+
+CEAN AND COASTAL CONSULTANTS PARSONS BRINCKERHOFF
+ARCADIS
+SCAPE / LANDSCAPE ARCHITECTURE OCEAN AND COASTAL CONSULTANTS PARSONS BRINCKERHOFF
+ARCADIS
+SEAR
+
+
+ent_dt[FILE=='20190276_Jordan_Cove_FEIS_Appendix_O.txt'][550:600,]
+
+unique(stan_found$PROJECT_ID)
+
+stantec = grep('Stantec',test$text)
+st = test[stantec,.(File)][!duplicated(File),]
+fl = str_remove(st$File,'_.*')
+
+test[stantec,][!str_remove(File,'_.*') %in% stan_found$PROJECT_ID,]
+
+
+consultants[PROJECT_ID=='20190276']
+
+orgs[token=='Pond']
+grep('POND',clean_names,value = T)
+consultants
+
+
+consultants
+
+
+orgs[orgs$CONSULTANT=='Johnson',]
+
 ent_dt[grepl('Cardno',token,perl = T),]
 
-grep('Cardno',clean_names,value = T)
+grep('DOWL',clean_names,value = T)
 
 ent_dt[entity_type=='WORK']
 ent_dt[grepl("GRAEF",toupper(token)),]
