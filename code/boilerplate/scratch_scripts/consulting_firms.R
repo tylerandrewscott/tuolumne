@@ -8,7 +8,7 @@ library(rvest)
 library(stringr)
 tabs = '.flush-left td , th'
 prepares = fread('../tuolumne/scratch/boilerplate/preparedocs.csv')
-dim(prepares)
+
 firms = rbindlist(list(read_html(top100) %>% html_nodes('table') %>% .[[2]] %>% html_table(trim=T,fill=T),
 read_html(top200) %>% html_nodes('table') %>% .[[2]] %>% html_table(trim=T,fill=T)),use.names=T)
 

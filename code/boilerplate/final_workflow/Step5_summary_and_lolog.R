@@ -15,6 +15,61 @@ samples = 10000
 iters = 40
 stepsize = 50
 
+
+projects = fread('scratch/boilerplate/project_candidates_eis_only.csv')
+projects$DECISION = NA
+
+projects$DECISION[grepl('(CONSERVATION|MANAGEMENT|LAND USE|FOREST|GRASSLAND) PLAN',toupper(projects$Title))] <- 'Plan'
+projects$DECISION[grepl('PROGRAMMATIC|(\\W|^)PROGRAM(\\W|$)|POLICY|RULE',toupper(projects$Title))] <- 'Program/policy'
+
+
+grep('PLAN',toupper(projects$Title[is.na(projects$DECISION)]),value = T)
+
+
+projects$DECISION[grepl('\\WPROJECT(\\W|$)|IMPROVEMENT|EXPANSION|MAINTENANCE|SALE',toupper(projects$Title))] <- 'Project'
+projects$DECISION[grepl('\\WPERMIT(\\W|$)|\\WLICENSE(\\W|$)|\\WRENEWAL(\\W|$)|\\WLEASE(\\W|$)',toupper(projects$Title))] <- 'Permit/license/lease'
+
+table(projects$DECISION)
+projects$EIS.Title[is.na(projects$DECISION)]
+
+require(lineprof)
+require(pryr)
+mem_used()
+rm(pages_list)
+gc()
+table(is.na(projects$DECISION))
+projects[is.na(DECISION)]  %>%
+  unnest_tokens(word, Title,token = 'ngrams',n=1) %>% count(word,sort = T) %>% head(10)
+
+library(tm)
+library(tidytext)
+tidytext::unnest_tokens(projects$Title)
+
+  unnest_tokens(bigram, text, token = "ngrams", n = 2)
+
+
+
+rm(already)
+
+
+projects[is.na(DECISION),.N,by=.(Agency)][order(-N)]
+
+projects$Title[is.na(projects$DECISION)]
+rm(wholefile)
+gc()
+projects$Title[grepl('\\WPROGRAM\\W|\\WPOLICY\\W',toupper(projects$Title))]
+projects$Title[is.na(projects$DECISION)]
+
+
+
+table(is.na(projects$DECISION))
+projects$DECISION[grepl('PERMIT',toupper(projects$Title))]
+grep('PERMIT',toupper(projects$Title),value = T)
+table(grepl("PLAN",toupper(projects$Title)),grepl('PROGRAMMATIC',toupper(projects$Title)))
+table(projects$DECISION,is.na(projects$DECISION))
+
+table(projects$Agency)
+
 epa_record = fread('scratch/eis_record_detail.csv')
 epa_record = epa_record[epa_record$Document.Type=='Final',]
 
