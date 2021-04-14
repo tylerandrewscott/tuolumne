@@ -1,4 +1,5 @@
 
+
 if(!require(tokenizers)){install.packages('tokenizers');require(tokenizers)}
 if(!require(spacyr)){install.packages('spacyr');require(spacyr)}
 if(!require(tigris)){install.packages('tigris');require(tigris)}

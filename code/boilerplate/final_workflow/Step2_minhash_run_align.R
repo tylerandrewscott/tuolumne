@@ -33,8 +33,8 @@ projects = fread('../bucket_mount/tuolumne/scratch/boilerplate/project_candidate
 projects = projects[Document=='Final',]
 projects = projects[grepl('^201[3-9]|^2020',PROJECT_ID),]
 
-scratch_loc = '../bucket_mount/tuolumne/scratch/boilerplate/hash_candidates/'
 
+scratch_loc = '../bucket_mount/tuolumne/scratch/boilerplate/hash_candidates/'
 
 minhash <- minhash_generator(n = 240, seed = 40)
 progress_bars = T
@@ -63,31 +63,31 @@ hash_file = paste0(scratch_loc,'eis_page_hashes.rds')
 flist = as.character(full_tlist$text)
 names(flist) <- paste0(full_tlist$File,'_',full_tlist$Page)
 
-# eis_corpus =  TextReuseCorpus(text = flist,
-#                               meta = list(File = full_tlist$File,Page = full_tlist$Page),
-#                               tokenizer = tokenize_ngrams, n = 10,
-#                               minhash_func = minhash, keep_tokens = TRUE,
-#                               progress = progress_bars,skip_short = T)
-# gc()
-# saveRDS(eis_corpus,'../bucket_mount/tuolumne/scratch/eis_page_corp_scratch.rds')
+ eis_corpus =  TextReuseCorpus(text = flist,
+                               meta = list(File = full_tlist$File,Page = full_tlist$Page),
+                               tokenizer = tokenize_ngrams, n = 10,
+                               minhash_func = minhash, keep_tokens = TRUE,
+                               progress = progress_bars,skip_short = T)
+ gc()
+saveRDS(eis_corpus,'../bucket_mount/tuolumne/scratch/eis_page_corp_scratch.rds')
 
-eis_corpus = readRDS('../bucket_mount/tuolumne/scratch/eis_page_corp_scratch.rds')
+#eis_corpus = readRDS('../bucket_mount/tuolumne/scratch/eis_page_corp_scratch.rds')
 #file.exists('../bucket_mount/tuolumne/scratch/eis_page_corp_scratch.rds')
-# split_corpus_ntiles = dplyr::ntile(x = seq(eis_corpus),n = mcores*10)
-# split_corpus = split(eis_corpus,split_corpus_ntiles)
+split_corpus_ntiles = dplyr::ntile(x = seq(eis_corpus),n = mcores*10)
+split_corpus = split(eis_corpus,split_corpus_ntiles)
+ 
+split_buckets = foreach(x = split_corpus) %dopar% {textreuse::lsh(x,bands = 60)}
+gc()
 # 
-# split_buckets = foreach(x = split_corpus) %dopar% {textreuse::lsh(x,bands = 60)}
-# gc()
-# 
-# while(any(sapply(split_buckets,is.null))){
-#   null_fails = which(sapply(split_buckets,is.null))
-#   split_buckets[null_fails] <- pblapply(null_fails,function(x) lsh(split_corpus[[x]],bands = 40,progress = F),cl = 5)
-# }
-# 
-# eis_buckets = do.call(rbind,split_buckets)
-# saveRDS(eis_buckets,'../bucket_mount/tuolumne/scratch/eis_page_buckets_scratch.rds')
+while(any(sapply(split_buckets,is.null))){
+   null_fails = which(sapply(split_buckets,is.null))
+   split_buckets[null_fails] <- pblapply(null_fails,function(x) lsh(split_corpus[[x]],bands = 40,progress = F),cl = 5)
+ }
 
-eis_buckets = readRDS('../bucket_mount/tuolumne/scratch/eis_page_buckets_scratch.rds')
+ eis_buckets = do.call(rbind,split_buckets)
+ saveRDS(eis_buckets,'../bucket_mount/tuolumne/scratch/eis_page_buckets_scratch.rds')
+
+#eis_buckets = readRDS('../bucket_mount/tuolumne/scratch/eis_page_buckets_scratch.rds')
 eis_candidates <- lsh_candidates(buckets = eis_buckets)
 require(dplyr)
 candidate_splits = split(eis_candidates,ntile(1:nrow(eis_candidates),n = nrow(eis_candidates) %/% 10000))
