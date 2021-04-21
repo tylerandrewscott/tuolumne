@@ -6,31 +6,39 @@ sapply(pack,require,character.only=T)
 
 #update.packages(ask = FALSE, checkBuilt = TRUE)
 runEISnet = TRUE
-runDOEnet = TRUE
-runBLMnet = TRUE
-runUSFSnet = TRUE
-
 mcores = detectCores() - 2
 samples = 10000
 iters = 40
 stepsize = 50
 
 
-projects = fread('scratch/boilerplate/project_candidates_eis_only.csv')
+projects = fread('boilerplate_project/input/project_candidates_eis_only.csv')
+projects$Title <- gsub('\"',"",projects$Title,fixed = T)
+projects$clean.title = str_replace(projects$Title,'\\s{1,}',' ')
 projects$DECISION = NA
+projects$DECISION[grepl('\\WAMP\\W|RMP|(CONSERVATION|MANAGEMENT|LAND USE|FOREST|GRASSLAND|NOURISHMENT|ECOSYSTEMS|DEVELOPMENT|MASTER|TRAVEL) PLAN|TRAVEL MANAGEMENT|GENERIC|PLAN REVISION|PLAN AMENDMENT|CONTROL MANUAL',toupper(projects$clean.title))] <- 'Plan'
+projects$DECISION[grepl('LEGISLATIVE|ACTIVITIES|DETERMINATION|REGULATORY|REGULATIONS|EXCHANGE|(READINESS|OIL AND GAS|GEOPHYSICAL) ACTIVITIES|RECAPITALIZATION|INVASIVE PLANT TREATMENT|PROGRAMMATIC|(\\W|^)PROGRAM(\\W|$)|PERMIT RENEWAL|\\WUSE OF\\W|POLICY|CONTRACT|RULE|MEASURES|PERMIT TO RELEASE|RISK MANAGEMENT|FORESTWIDE|REZONING|MANAGEMENT RESPONSE|TRAINING AND TESTING|RESIDUAL MANAGEMENT|LEASING|NATIONWIDE|WESTERN STATES|SYSTEM OPERATIONS|AIRFIELD OPERATIONS|DAMAGE REDUCTION|TRAINING AND OPERATIONS',toupper(projects$clean.title))] <- 'Program/policy'
+#note: after coding the other instances of word "management", remainder are actually forest service _projects_ that sound like plans
+#NOTE: 'plan of operation" connotes a case where new thing is built, eis studies project+intended operations
+projects$DECISION[grepl('(US|I|SR)(-|\\s)[0-9]{1,3}|\\WPROJECT(S|)(\\W|$)|DRAWDOWN|COMMUNICATION SITE|SPECIFIC PLAN|CHANNEL|BRIDGE|ECOSYSTEM RESTORATION|TAMARISK REMOVAL|PRODUCTION|TRANSMISSION|\\WLOCKS\\W|MODERNIZATION|PLAN OF OPERATION|OPERATIONAL PLAN|OPERATIONS PLAN|STATION|EXPERIMENTAL REMOVAL|\\WMINE$|FREEWAY|DREDGING|DEEPWATER PORT|REFORESTATION|EXTENSION|REBUILD|REHABILITATION|LIGHT RAIL|DISPOSAL|CROSSING|RELOCATION|REMEDIATION|LEVEES|RESTORATION$|RECONSTRUCTION|CONVERSION|CLOSURE|IMPROVEMENT|PARKWAY|HIGHWAY|\\WTRAIN\\W|CORRIDOR|EXPANSION|MAINTENANCE|UPGRADE|SALE|(FUELS|VEGETATION|RESTORATION) MANAGEMENT|DISPOSITION|FEE(-|\\s)TO(-|\\s)TRUST|BEDDOWN|EVALUATION|FACILITY|\\WMINE\\W|PASSAGE',toupper(projects$clean.title))&is.na(projects$DECISION)] <- 'Project'
+table(is.na(projects$DECISION)
+sample(projects$clean.title[is.na(projects$DECISION)],10)
 
-projects$DECISION[grepl('(CONSERVATION|MANAGEMENT|LAND USE|FOREST|GRASSLAND) PLAN',toupper(projects$Title))] <- 'Plan'
-projects$DECISION[grepl('PROGRAMMATIC|(\\W|^)PROGRAM(\\W|$)|POLICY|RULE',toupper(projects$Title))] <- 'Program/policy'
+grep('ACTIVITIES',toupper(projects$clean.title),value = T)
+grep("(US|I)(-|\\s)[0-9]{1,3}",projects$clean.title,value = T)
 
 
-grep('PLAN',toupper(projects$Title[is.na(projects$DECISION)]),value = T)
+projects$clean.title[grepl('MANAGEMENT',toupper(projects$clean.title))&!grepl('PLAN',toupper(projects$clean.title))&is.na(projects$DECISION)]
 
+grep('Feasibility',projects$clean.title,value = T)
 
-projects$DECISION[grepl('\\WPROJECT(\\W|$)|IMPROVEMENT|EXPANSION|MAINTENANCE|SALE',toupper(projects$Title))] <- 'Project'
 projects$DECISION[grepl('\\WPERMIT(\\W|$)|\\WLICENSE(\\W|$)|\\WRENEWAL(\\W|$)|\\WLEASE(\\W|$)',toupper(projects$Title))] <- 'Permit/license/lease'
 
-table(projects$DECISION)
-projects$EIS.Title[is.na(projects$DECISION)]
+projects[grepl('MANAGEMENT$',toupper(clean.title))&is.na(DECISION),]
+
+projects[grepl('MANAGEMENT$',toupper(clean.title))&AGENCY=='Forest Service',]
+
+
 
 require(lineprof)
 require(pryr)

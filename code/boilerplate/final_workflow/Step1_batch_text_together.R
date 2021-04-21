@@ -3,8 +3,8 @@ library(data.table)
 library(tidyverse)
 #setwd('Box/tuolumne/')
 
-projects = fread('scratch/boilerplate/project_candidates_eis_only.csv')
-documents = fread('scratch/boilerplate/document_candidates_eis_only.csv')
+projects = fread('boilerplate_project/data_products/project_candidates_eis_only.csv')
+documents = fread('boilerplate_project/data_products/document_candidates_eis_only.csv')
 
 flist = list.files('../eis_documents/enepa_repository/text_as_datatable/',recursive = T,full.names = T)
 
@@ -28,7 +28,8 @@ fname = 'scratch/boilerplate/big_text_files/big_eis_text.txt'
 start_over<-FALSE
 
 if(!file.exists(fname)|start_over){fwrite(x = big_eis_text ,file = fname,sep = '\t');already = big_eis_text}
-if(file.exists(fname)&!start_over){ already = fread(fname,sep ='\t');already = already[File %in% gsub('pdf$','txt',documents$FILE_NAME),]}
+if(file.exists(fname)&!start_over){ already = fread(fname,sep ='\t');
+already = already[File %in% gsub('pdf$','txt',documents$FILE_NAME),]}
 
 
 still_need = have_pdf[!gsub('pdf$','txt',have_pdf$FILE_NAME) %in% already$File]

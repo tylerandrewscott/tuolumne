@@ -21,7 +21,6 @@ library(googleLanguageR)
 googleLanguageR::gl_auth(json_file = account_key)
 
 
-pymat = fread('scratch/boilerplate/python_spacy_matcher_person_names.csv')
 text_storage = 'input/filtered_text_files/'
 flist = list.files(text_storage)
 projects_used = fread('scratch/boilerplate/project_candidates_eis_only.csv')
@@ -36,7 +35,6 @@ keep_tlist = tlist[basename(tlist) %in% files_used$FILE_NAME]
 
 ent_set = list.files('scratch/entity_results/',full.names = T,recursive = T)
 ent_all = rbindlist(pblapply(ent_set,readRDS,cl = 7),fill = T,use.names = T)
-
 ents_dt = ent_all[type!='NUMBER'&!is.na(type)&mention_type == 'PROPER',]
 ents_dt = ents_dt[!ents_dt$name %in% state.name,]
 
@@ -129,17 +127,9 @@ ent_dt = ent_dt[!grepl('^[A-Z]\\.',name),]
 #for(p in pairs){
 #  ent_dt$name[ent_dt$name %in% p] <- p[1]
 #}
-
-person_dt[duplicated(name),]
-
-person_dt[name=='Daniel Moore']
-person_dt[!is.na(wikipedia_url),][,.N,by=.(name)][order(-N)]
 person_dt = ent_dt
-person_dt[,.N,by=.(name)][order(-N)]
-person_dt
 
-file_text = readRDS(sort(list.files('scratch/boilerplate/',pattern = 'raw_entity_pull_',full.names = T),decreasing = T)[1])
-ent_dt = file_text
+ent_dt = ent_all
 ent_dt$PROJECT_ID <- str_remove(ent_dt$FILE,'_.*')
 #ent_dt = ent_dt[grepl('[A-Za-z0-9]',name),]
 ent_dt = ent_dt[grepl('[A-Z]',name),]
@@ -153,7 +143,6 @@ ent_dt = ent_dt[!name %in%state.name,]
 
 
 ent_dt = ent_dt[!name %in% ent_dt[!duplicated(paste(name,PROJECT_ID)),.N,by=.(name)][order(-N),][N>80,]$name,]
-
 ent_dt = ent_dt[!grepl('\\(',ent_dt$name),]
 
 #full_tlist <- readRDS('scratch/boilerplate/big_text_files/big_eis_text.rds')
@@ -238,7 +227,7 @@ clean_names = unique(clean_names)
 
 
 person_dt = person_dt[!str_replace_all(name,'_',' ') %in% clean_names,]
-saveRDS(person_dt,'scratch/boilerplate/person_entities_extracted.RDS')
+saveRDS(person_dt,'boilerplate_project/data_products/person_entities_extracted.RDS')
 
 uq_names = unique(ent_dt$name);length(uq_names)
 mcores = 4
@@ -254,7 +243,6 @@ match3C = pblapply(str_remove(toupper(clean_names),'\\sINC\\.$|\\sLLC$|\\sLLC\\.
 consult_matches = mapply(function(m1,m2,m3,m4,m5,m6) unique(c(m1,m2,m3,m4,m5,m6)),m1 = match1,m2 = match2,m3 = match3,m4 = match1A,m5 = match2B,m6 = match3C)
 
 consult_dt = rbindlist(lapply(seq_along(clean_names),function(i) data.table(clean_names[i],uq_names[consult_matches[[i]]])),use.names = T,fill = T)[!is.na(V2),]
-
 
 orgs = ent_dt
 orgs$NAME = toupper(orgs$name)
@@ -285,7 +273,7 @@ orgs$CONSULTANT[toupper(orgs$name) %in% other_consultants] <- toupper(orgs$name[
 
 orgs$CONSULTANT <- toupper(orgs$CONSULTANT)
 orgs = orgs[!is.na(CONSULTANT),]
-orgs = orgs[!CONSULTANT%in%c('PAYETTE','MCMAHON','HYDROGEOLOGIC INC.','WOOD','LITTLE','PAGE','CRAWFORD','NELSON','HERBERT','WHITMAN','Johnson','JOHNSON','POND','Whitman','BOWEN','STEWART','ENGLAND','HUNT','Crawford','Page','SAM LLC','Cathy Bechtel','Little','EXP'),]
+orgs = orgs[!CONSULTANT%in%c('PAYETTE','MCMAHON','HYDROGEOLOGIC INC.','WHITNEY','WOOD','LITTLE','PAGE','CRAWFORD','NELSON','HERBERT','WHITMAN','Johnson','JOHNSON','POND','Whitman','BOWEN','STEWART','ENGLAND','HUNT','Crawford','Page','SAM LLC','Cathy Bechtel','Little','EXP'),]
 
 handcoded_firms = orgs[NAME %in% other_consultants,.(PROJECT_ID,NAME)]
 setnames(handcoded_firms,'NAME','FIRM')
@@ -297,142 +285,19 @@ setnames(detected_firms,'CONSULTANT','FIRM')
 consults = rbindlist(list(detected_firms,handcoded_firms,autocoded_firms))
 consults$FIRM <- toupper(consults$FIRM)
 consults = consults[!duplicated(consults),]
-consults[,.N,by=.(FIRM)][order(-N)][1:20]
-
-orgs[!duplicated(paste(CONSULTANT,PROJECT_ID)),.N,by=.(CONSULTANT)][order(-N)][1:20,]
-
-orgs[CONSULTANT=='WSP']
-
-orgs[PROJECT_ID=='20160133']
-
-orgs[!duplicated(paste(PROJECT_ID,CONSULTANT)),.N,by=.(CONSULTANT)][order(-N)][1:30]
 
 
+saveRDS(consults,'boilerplate_project/data_products/consultant_project_matches.RDS')
 
-consults$FIRM<-str_replace_all(consults$FIRM,'\\,','')
-
-
-
-
-
-consults[!duplicated(PROJECT_ID,FIRM),.N,by=.(FIRM)][order(-N)][1:20,]
-
-
-
-orgs[starts_with&!is.na(CONSULTANT),][,.N,by=.(CONSULTANT)][order(-N)][1:30,]
-
-
-orgs[CONSULTANT=='WOOD',]$NAME
-
-orgs
-
-orgs[CONSULTANT=='NELSON']
-
-orgs[{grepl('\\s',orgs$CONSULTANT)}|{!grepl('\\s',orgs$CONSULTANT) & orgs$CONSULTANT==orgs$NAME},][!duplicated(paste(PROJECT_ID,CONSULTANT)),][,.N,by=.(CONSULTANT)][order(-N),][1:20,]
-person_dt[PROJECT_ID=='20130120',]
-
-starts_with = as.vector(mapply(function(x,y) grepl()
-  
-  ,x = orgs$CONSULTANT,y = toupper(orgs$name)))
-
-
-
-
-test = orgs[starts_with&!is.na(CONSULTANT),]
-test[CONSULTANT=='LITTLE']
-
-
-
-
-orgsstarts_with | grepl('\\s',orgs$name),]
-
-
-orgs[is.na(CONSULTANT),][,.N,by=.(NAME)][order(-N)][1:30,]
-  
-       orgs[NAME=='SMITH']
-       
-       
-       x = orgs[,.N,by=.(CONSULTANT)][order(-N)]
-
-
-
-orgs = ent_dt
-orgs[!name %in% orgs[,.N,by=.(name)][N>1,]$name,]$name
-#drop all names observed only 1 time
-orgs = orgs[name %in% orgs[,.N,by=.(name)][N>1,]$name,]
-
-
-
-#length(unique(toupper(clean_names)))
-#orgs$name = orgs$name
-
-#orgs = orgs[name %in% orgs[!duplicated(paste(name,PROJECT_ID)),.N,by=.(name)][N>1,]$name,]
-
-
-
-orgs$type[orgs$CONSULTANT %in% c("CDM Smith","Parametrix","MOTT MACDONALD","Leidos",'WSP',"HNTB","Tetra Tech Inc.","Louis Berger","RK\\&K","Michael Baker International",
-"Black \\& Veatch","AECOM","ICF","GRAEF","Atkins North America","HDR","POTOMAC-HUDSON ENGINEERING, INC.","STOLLER-NAVARO","SCIENCE APPLICATIONS INTERNATIONAL CORPORATION")]<-'ORGANIZATION'
-#orgs$CONSULTANT[grep('ICF',orgs$CONSULTANT)] <- 'ICF International'
-
-
-
-
-
-saveRDS(orgs,'scratch/consultant_project_matches_V2.RDS')
-
-
-orgs
-
-fwrite(projects_used[,.(EIS.Number,AGENCY,EIS.Title)],'input/preparer_consultants.csv')
-
-
-
-consultant_project_matches = pblapply(seq_along(name_matches),function(x) {data.table(PROJECT_ID = orgs$PROJECT_ID[name_matches[[x]]],FIRM = clean_names[x])})
-saveRDS(consultant_project_matches,'scratch/consultant_project_matches_V2.RDS')
-
-consultant_project_matches = readRDS('scratch/consultant_project_matches_V2.RDS')
-
-consults = rbindlist(consultant_project_matches)[!is.na(PROJECT_ID)]
-consults$FIRM = toupper(consults$FIRM)
-consults = consults[!duplicated(consults),]
-
-handcoded_firms = orgs[NAME %in% other_consultants,.(PROJECT_ID,NAME)]
-setnames(handcoded_firms,'NAME','FIRM')
-autocoded_firms = orgs[grepl('CONSULTING|CONSULTANTS',NAME),.(PROJECT_ID,NAME)]
-setnames(autocoded_firms,'NAME','FIRM')
-
-consults = rbindlist(list(consults,handcoded_firms,autocoded_firms))
-consults = consults[!duplicated(consults),]
-
-consult_Freq = consults[PROJECT_ID %in%projects_used$EIS.Number,][,.N,by = .(FIRM)][order(-N)][N>=5,]
-
+consult_Freq = consults[PROJECT_ID %in%projects_used$EIS.Number,][,.N,by = .(FIRM)][order(-N)][1:16,]
 
 
 #consults[PROJECT_ID %in% epa_record$EIS.Number,][,.N,by = .(FIRM)][order(-N)][1:25,]
-
-outdir.tables = "output/boilerplate/tables/" 
+require(htmlTable)
 tableout <-htmlTable(consult_Freq)
-outdir.tables = "output/boilerplate/tables/" 
+outdir.tables = 'boilerplate_project/output/tables'
 sink(paste0(outdir.tables,"consultant_table.html"))
 print(tableout,type="html",useViewer=F)
 sink()
-
-
-
-library(pdftools)
-library(tabulizer)
-library(rJava)
-library(data.table)
-library(rvest)
-library(stringr)
-tabs = '.flush-left td , th'
-prepares = fread('../tuolumne/scratch/boilerplate/preparedocs.csv')
-
-firms = rbindlist(list(read_html(top100) %>% html_nodes('table') %>% .[[2]] %>% html_table(trim=T,fill=T),
-                       read_html(top200) %>% html_nodes('table') %>% .[[2]] %>% html_table(trim=T,fill=T)),use.names=T)
-
-splits = str_split(firms$FIRM,',')
-firms$NAME = sapply(splits,function(x) x[[1]])
-
 
 

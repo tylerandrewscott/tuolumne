@@ -24,9 +24,15 @@ epa$Title = iconv(epa$Title,'utf8')
 epa$Year = str_extract(epa$EIS.Number,'^[0-9]{4}')
 epa = epa[as.numeric(Year) %in% 2013:2020,]
 
-grep('PROG',epa$Title,value = T)
 epa  = epa[!grepl('ADOPTION|WITHDRAWN|^Withdrawn|^Adoption',Title),]
+#adoptions not coded as such
 epa = epa[!EIS.Number%in% c('20170008','20170006'),]
+#duplicate project submitted again as 20200248
+epa = epa[!EIS.Number %in% c('20200182')]
+#ACOE adoption of FWHA EIS
+epa = epa[!EIS.Number %in% c('20150181')]
+
+
 #epa = epa[!EIS.Number%in%c(20170006,20170006),]
 
 epa$Agency[epa$Agency %in% c('Bonneville Power Administration','Western Area Power Administration','National Nuclear Security Administration')] <- 'Department of Energy'
@@ -57,6 +63,7 @@ epa$Agency[epa$Agency%in%c('Department of Health and Human Services','Food and D
 epa = epa[Agency %in% epa[,.N,Agency][order(N),][N>=5,]$Agency,]
 
 
+
 doc_url = '../eis_documents/enepa_repository/meta_data/eis_document_record.csv'
 epa_docs = fread(doc_url)
 
@@ -84,32 +91,25 @@ text_flist = list.files('../eis_documents/enepa_repository/text_as_datatable/',r
 ex = gsub('pdf$|PDF$','txt',epa_docs$File_Name) %in% basename(text_flist)
 
 epa_sub_docs = epa_docs[ex,]
-epa_sub = epa[PROJECT_ID %in% epa_sub_docs$PROJECT_ID,]
-epa_sub$MASTER_ID = epa_sub$PROJECT_ID
-epa_sub_docs$MASTER_ID = epa_sub_docs$PROJECT_ID
+epa_sub = epa
+epa_sub$HAVE_DOCS = epa_sub$EIS.Number %in% epa_sub_docs$EIS.Number
+
 library(htmlTable)
 
 
 projects = epa_sub
 documents = epa_sub_docs
 
-projects$PROJECT_ID <- gsub('\\s{1,}',' ',projects$PROJECT_ID)
-projects$PROJECT_ID <- gsub('\\s{1,}','_',projects$PROJECT_ID)
-documents$PROJECT_ID <- gsub('\\s{1,}',' ',documents$PROJECT_ID)
-documents$PROJECT_ID <- gsub('\\s{1,}','_',documents$PROJECT_ID)
-
-
 documents$FILE_NAME <- gsub('\\s{1,}',' ',documents$File_Name)
 documents$FILE_NAME <- gsub('\\s{1,}','_',documents$File_Name)
 
 projects = projects[!duplicated(projects),]
-
 documents <- documents[!duplicated(documents),]
-
 documents = documents[!{grepl('\\(',documents$FILE_NAME) &!grepl('\\)',documents$FILE_NAME)},]
-fwrite(projects,file = 'scratch/boilerplate/project_candidates_eis_only.csv')
-fwrite(documents,file = 'scratch/boilerplate/document_candidates_eis_only.csv')
 
-htmlTable(epa[,list(sum(PROJECT_ID %in% epa_sub$PROJECT_ID),.N),by=.(Agency)][order(-N)])
+fwrite(projects,file = 'boilerplate_project/data_products/project_candidates_eis_only.csv')
+fwrite(documents,file = 'boilerplate_project/data_products/document_candidates_eis_only.csv')
+
+
 #htmlTable(projects[,list(sum(PROJECT_ID %in% documents$PROJECT_ID|MASTER_ID %in% documents$PROJECT_ID),.N),by = .(AGENCY,PROJECT_TYPE)][order(-N)])
 
