@@ -107,5 +107,5 @@ score_list = foreach(i = candidate_splits) %dopar% {
 
 score_dt = rbindlist(score_list)
 
-saveRDS(score_dt,'../bucket_mount/tuolumne/scratch/eis_page_scores_scratch.rds')
+saveRDS(score_dt,'boilerplate_project/data_products/eis_page_scores_scratch.rds')
 
