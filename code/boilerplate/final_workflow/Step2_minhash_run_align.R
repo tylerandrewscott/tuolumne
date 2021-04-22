@@ -25,11 +25,11 @@ if(!require(tidyverse)){install.packages('tidyverse');require(tidyverse)}
 #setwd("google_drive/tuolumne/")
 #setDTthreads(3)
 #getDTthreads()
-mcores = floor(detectCores() - 15 )
-options("mc.cores" = floor(detectCores() - 15))
+mcores = floor(detectCores() - 16 )
+options("mc.cores" = floor(detectCores() - 16))
 
 #table(projects$AGENCY,projects$PROJECT_TYPE)
-projects = fread('../bucket_mount/tuolumne/scratch/boilerplate/project_candidates_eis_only.csv')
+projects = fread('boilerplate_project/data_products/project_candidates_eis_only.csv')
 projects = projects[Document=='Final',]
 projects = projects[grepl('^201[3-9]|^2020',PROJECT_ID),]
 
@@ -69,7 +69,7 @@ names(flist) <- paste0(full_tlist$File,'_',full_tlist$Page)
                                minhash_func = minhash, keep_tokens = TRUE,
                                progress = progress_bars,skip_short = T)
  gc()
-saveRDS(eis_corpus,'../bucket_mount/tuolumne/scratch/eis_page_corp_scratch.rds')
+#saveRDS(eis_corpus,'../bucket_mount/tuolumne/scratch/eis_page_corp_scratch.rds')
 
 #eis_corpus = readRDS('../bucket_mount/tuolumne/scratch/eis_page_corp_scratch.rds')
 #file.exists('../bucket_mount/tuolumne/scratch/eis_page_corp_scratch.rds')
@@ -85,7 +85,7 @@ while(any(sapply(split_buckets,is.null))){
  }
 
  eis_buckets = do.call(rbind,split_buckets)
- saveRDS(eis_buckets,'../bucket_mount/tuolumne/scratch/eis_page_buckets_scratch.rds')
+ #saveRDS(eis_buckets,'../bucket_mount/tuolumne/scratch/eis_page_buckets_scratch.rds')
 
 #eis_buckets = readRDS('../bucket_mount/tuolumne/scratch/eis_page_buckets_scratch.rds')
 eis_candidates <- lsh_candidates(buckets = eis_buckets)
