@@ -23,8 +23,8 @@ googleLanguageR::gl_auth(json_file = account_key)
 
 text_storage = 'input/filtered_text_files/'
 flist = list.files(text_storage)
-projects_used = fread('scratch/boilerplate/project_candidates_eis_only.csv')
-files_used = fread('scratch/boilerplate/document_candidates_eis_only.csv')
+projects_used = fread('boilerplate_project/data_products/project_candidates_eis_only.csv')
+files_used = fread('boilerplate_project/data_products/document_candidates_eis_only.csv')
 tlist = list.files('../eis_documents/enepa_repository/text_as_datatable/',full.names = T, recursive = T)
 #entity_file = 'scratch/boilerplate/entity_extraction_results.rds'
 #if(!file.exists(entity_file)){ents =list()}else{ents = readRDS(entity_file)}
@@ -37,6 +37,7 @@ ent_set = list.files('scratch/entity_results/',full.names = T,recursive = T)
 ent_all = rbindlist(pblapply(ent_set,readRDS,cl = 7),fill = T,use.names = T)
 ents_dt = ent_all[type!='NUMBER'&!is.na(type)&mention_type == 'PROPER',]
 ents_dt = ents_dt[!ents_dt$name %in% state.name,]
+
 
 ent_dt = ents_dt
 #ent_dt = rbindlist(file_text)
@@ -242,12 +243,12 @@ match3C = pblapply(str_remove(toupper(clean_names),'\\sINC\\.$|\\sLLC$|\\sLLC\\.
 
 consult_matches = mapply(function(m1,m2,m3,m4,m5,m6) unique(c(m1,m2,m3,m4,m5,m6)),m1 = match1,m2 = match2,m3 = match3,m4 = match1A,m5 = match2B,m6 = match3C)
 
-consult_dt = rbindlist(lapply(seq_along(clean_names),function(i) data.table(clean_names[i],uq_names[consult_matches[[i]]])),use.names = T,fill = T)[!is.na(V2),]
+consult_dt = rbindlist(lapply(seq_along(clean_names),function(i) data.table(clean_names[i],uq_names[consult_matches[[i]]])),use.names = T,fill = T)
+consult_dt <- consult_dt[!is.na(V2),]
 
 orgs = ent_dt
 orgs$NAME = toupper(orgs$name)
 orgs$CONSULTANT <- consult_dt$V1[match(orgs$name,consult_dt$V2)]
-orgs = orgs[orgs$CONSULTANT!='SAM LLC']
 other_consultants =  c("STRATIFIED ENVIRONMENTAL & ARCHAEOLOGICAL SERVICES, LLC",
                        "WALSH ENVIRONMENTAL SCIENTISTS AND ENGINEERS, LLC",
                        "CURRY & KERLINGER, LLC",
@@ -273,7 +274,7 @@ orgs$CONSULTANT[toupper(orgs$name) %in% other_consultants] <- toupper(orgs$name[
 
 orgs$CONSULTANT <- toupper(orgs$CONSULTANT)
 orgs = orgs[!is.na(CONSULTANT),]
-orgs = orgs[!CONSULTANT%in%c('PAYETTE','MCMAHON','HYDROGEOLOGIC INC.','WHITNEY','WOOD','LITTLE','PAGE','CRAWFORD','NELSON','HERBERT','WHITMAN','Johnson','JOHNSON','POND','Whitman','BOWEN','STEWART','ENGLAND','HUNT','Crawford','Page','SAM LLC','Cathy Bechtel','Little','EXP'),]
+orgs = orgs[!CONSULTANT%in%c('PAYETTE','MCMAHON','HYDROGEOLOGIC INC.','WHITNEY','WOOD','SAM LLC','LITTLE','PAGE','CRAWFORD','NELSON','HERBERT','WHITMAN','Johnson','JOHNSON','POND','Whitman','BOWEN','STEWART','ENGLAND','HUNT','Crawford','Page','SAM LLC','Cathy Bechtel','Little','EXP'),]
 
 handcoded_firms = orgs[NAME %in% other_consultants,.(PROJECT_ID,NAME)]
 setnames(handcoded_firms,'NAME','FIRM')
@@ -288,16 +289,4 @@ consults = consults[!duplicated(consults),]
 
 
 saveRDS(consults,'boilerplate_project/data_products/consultant_project_matches.RDS')
-
-consult_Freq = consults[PROJECT_ID %in%projects_used$EIS.Number,][,.N,by = .(FIRM)][order(-N)][1:16,]
-
-
-#consults[PROJECT_ID %in% epa_record$EIS.Number,][,.N,by = .(FIRM)][order(-N)][1:25,]
-require(htmlTable)
-tableout <-htmlTable(consult_Freq)
-outdir.tables = 'boilerplate_project/output/tables'
-sink(paste0(outdir.tables,"consultant_table.html"))
-print(tableout,type="html",useViewer=F)
-sink()
-
 

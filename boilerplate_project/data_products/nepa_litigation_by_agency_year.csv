@@ -1,0 +1,68 @@
+agency,recode,y2001,y2002,y2003,y2004,y2005,y2006,y2007,y2008,y2009,y2010,y2011,y2012,y2013
+ARMY-USACE,ACOE,,,,,,,,,5,6,3,10,8
+DHS-USCG,DHS,,,,,,,,,,0,1,0,1
+DOC-NOAA,NOAA,8,10,6,15,3,4,2,8,,5,8,,1
+DOC-NOAA-NMFS,NOAA,,,,,,,,,,,,8,6
+DOD,DOD,,,,,,,,,,1,0,0,0
+DOE-ENERGY,DOE,,,,,,,,,,0,2,0,0
+DOE-FERC,FERC,,,,,,,,,,0,0,0,1
+DOE-NNSA,DOE,,,,,,,,,,1,0,0,0
+DOI-BIA,BIA,,,,,,,,,0,1,0,1,1
+DOI-BLM,BLM,20,18,15,19,12,21,7,14,2,17,22,20,18
+DOI-BOEM,DOI (other),,,,,,,,,,5,0,1,0
+DOI-BOR,BR,,,,,,,,,3,0,1,3,0
+DOI-BSEE,DOI (other),,,,,,,,,,,,1,1
+DOI-FWS,FWS,17,12,2,5,3,6,3,6,0,6,4,5,16
+DOI-NPS,NPS,7,4,1,4,4,0,2,6,0,2,4,4,3
+DOI-OSM,DOI (other),0,0,1,0,1,0,1,1,0,0,,,1
+DOJ,DOJ,,,,,,,,,,0,0,0,0
+DOS,DOS,,,,,,,,,,0,0,0,0
+DOT,DOT (other),,,,,,,,,,,,,1
+DOT-FAA,DOT (other),7,16,3,2,3,3,5,0,1,3,3,0,0
+DOT-FHWA,FHWA,3,10,6,11,5,7,4,9,12,10,14,4,1
+DOT-FMCSA,DOT (other),,1,1,,,,,,,,1,0,0
+DOT-FTA,DOT (other),13,7,2,0,2,1,2,1,1,2,2,3,3
+DOT-STB,DOT (other),,,,,,,,,,,0,0,0
+EPA,EPA,4,1,0,6,2,2,2,1,1,1,1,0,0
+FHFA,FHFA,,,,,,,,,,2,0,0,0
+FRB,FRB,,,,,,,,,,0,0,0,0
+NAVY,DOD,2,3,0,2,1,1,1,1,1,2,0,1,0
+NRC,NRC,0,0,1,2,0,3,0,3,4,,1,0,0
+TVA,TVA,0,1,0,0,1,0,1,1,0,,,1,2
+USDA-APHIS,USDA (non-FS),2,0,3,3,3,2,1,3,,4,2,1,2
+USDA-FS,FS,40,40,66,76,50,30,40,46,,18,25,25,28
+USDA-NRCS,USDA (non-FS),,,,,,,,,,0,0,0,0
+USDA-RUS,USDA (non-FS),,,,,,,,,,0,0,0,0
+USDA-SBA,USDA (non-FS),,,,,,,,,,,,,1
+USPS,USPS,,,,,,,1,0,,,,,1
+AIR FORCE,DOD,2,0,0,0,0,0,0,0,,,,,
+ARMY,DOD,0,0,2,1,1,0,0,2,,,,,
+ARMY-COE,ACOE,7,13,12,13,8,25,1,15,,,,,
+ARMY-ELD,DOD,,,,,,,,,0,,,,
+DHS,DHS,,,,,,,,,3,,,,
+DHS-CBP,DHS,,,,,,,1,,,,,,
+DHS-CG,DHS,,,,,,,1,,,,,,
+DOC,DOC,,,,,,,,,12,,,,
+DOE,DOE,2,4,1,4,3,0,1,6,4,,,,
+DOI-BIA/NIGC,BIA,3,3,2,0,2,1,2,3,,,,,
+DOI-BUREC,BR,1,2,11,1,3,0,3,1,,,,,
+DOI-MMS,DOI (other),0,0,0,0,1,0,2,0,0,,,,
+DOI-SOL,DOI (other),,,,,,,,,0,,,,
+DOS-L/OES,DOS-L/OES,,,,,,,,,0,,,,
+DOT-MA,DOT (other),,,,,,,,,0,,,,
+DOT-MARAD,DOT (other),0,0,1,0,2,0,,,,,,,
+DOT-SLSC,DOT (other),0,,,0,0,0,,,,,,,
+EX-IM BANK (OPEC),EX-IM BANK (OPEC),,,,,,,0,0,,,,,
+FCC,FCC,0,0,2,0,1,0,0,0,0,,,,
+FDA,DHHS,0,0,0,0,0,0,,,,,,,
+FERC,FERC,0,0,0,2,4,2,2,3,2,,,,
+GSA,GSA,0,0,1,0,0,0,0,1,0,,,,
+HHS,DHHS,,,,,,,,,,1,,,
+HHS-FDA,DHHS,,,,,,,1,0,,,,,
+HHS-NIH,DHHS,,,,,,,0,0,0,,,,
+HUD,DHUD,0,1,1,0,4,0,0,1,0,,,,
+NSF,NSF,0,0,0,0,1,0,,,,,,,
+STATE,STATE,,1,,,,,,,,,,,
+USAF,DOD,,,,,,,,,1,,,,
+USDA,USDA (non-FS),,,,,,,,,43,,,,
+VA,VA,,,,,,,0,,2,,,,
