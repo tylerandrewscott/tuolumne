@@ -22,11 +22,10 @@ library(googleLanguageR)
 googleLanguageR::gl_auth(json_file = account_key)
 
 
-pymat = fread('scratch/boilerplate/python_spacy_matcher_person_names.csv')
 text_storage = 'input/filtered_text_files/'
 flist = list.files(text_storage)
-projects_used = fread('scratch/boilerplate/project_candidates_eis_only.csv')
-files_used = fread('scratch/boilerplate/document_candidates_eis_only.csv')
+projects_used = fread('boilerplate_project/data_products/project_candidates_eis_only.csv')
+files_used = fread('boilerplate_project/data_products/document_candidates_eis_only.csv')
 tlist = list.files('../eis_documents/enepa_repository/text_as_datatable/',full.names = T, recursive = T)
 #entity_file = 'scratch/boilerplate/entity_extraction_results.rds'
 #if(!file.exists(entity_file)){ents =list()}else{ents = readRDS(entity_file)}
@@ -102,7 +101,7 @@ pages_dt = rbindlist(pages_list,use.names = T)
 pages_dt$USE_KEEP2 = pages_dt$FILE %in% pages_dt[,list(sum(keep),sum(keep2)),by=.(FILE)][V1>10&V2>0]$FILE
 pages_dt = pages_dt[{!USE_KEEP2}|keep2==1,]
 #pages_dt[,.(FILE,Page,count,keep,keep2)][grepl('20130008',FILE),]
-saveRDS(pages_dt,'scratch/boilerplate/detected_preparer_pages.RDS')
+saveRDS(pages_dt,'boilerplate_project/data_products/detected_preparer_pages.RDS')
 
 pages_by_file = split(pages_dt$Page,pages_dt$FILE)
 pdf_files = list.files('../eis_documents/enepa_repository/documents/',full.names =T,recursive = T)

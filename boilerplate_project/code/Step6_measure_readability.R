@@ -38,11 +38,16 @@ projects$DECISION[projects$clean.title %in% c("Rocky Mountain Arsenal National W
 projects$AGENCY <- fct_infreq(projects$AGENCY)
 projects$AGENCY_SHORT <- fct_infreq(projects$AGENCY_SHORT)
 
-table(projects)
-
 flist_dt = readRDS('scratch/boilerplate/big_text_files/big_eis_text.rds')
 flist_dt = flist_dt[str_replace(flist_dt$File,'txt$','pdf') %in% docs$FILE_NAME,]
 flist_dt$EIS.Number <- str_remove(flist_dt$File,'_.*')
+
+
+require(sylcount)
+doc_texts = lapply(unique(flist_dt$EIS.Number),function(x) paste0(flist_dt$text[flist_dt$EIS.Number==x],collapse = ' '))
+names(doc_texts) <- unique(flist_dt$EIS.Number)
+
+readab = readability(unlist(doc_texts,nthreads = 4)
 
 meta_dt = flist_dt[,.(Page,File,EIS.Number)]
 page_counts = meta_dt[,.N,by=.(EIS.Number)]
@@ -50,6 +55,10 @@ setnames(page_counts,'N','total_pages')
 
 projects[,.N,by=.(AGENCY)][order(-N)]
 projects[,USE_DOCS:=EIS.Number %in% meta_dt$EIS.Number]
+
+length(unique(fread('../eis_documents/enepa_repository/meta_data/extra_docs.csv')$EIS.Number))
+table(str_extract(unique(fread('../eis_documents/enepa_repository/meta_data/extra_docs.csv')$EIS.Number),'^[0-9]{4}'))
+
 
 tb = htmlTable(projects[,.(sum(USE_DOCS),.N),by=.(AGENCY)][order(-V1),])
 outdir.tables = "boilerplate_project/output/tables/" 
@@ -74,12 +83,9 @@ lda$b_id = (str_remove(lda$b,'_.*'))
 
 lda$a_file = (str_remove(lda$a,'_[0-9]{1,}$'))
 lda$b_file = (str_remove(lda$b,'_[0-9]{1,}$'))
-lda = lda[b %in%  paste0(flist_dt$File,'_',flist_dt$Page)|a %in%  paste0(flist_dt$File,'_',flist_dt$Page),]
-lda = lda[a_id %in% projects$EIS.Number & b_id %in% projects$EIS.Number,]
-lda$agency1 = projects$AGENCY[match(lda$a_id,projects$EIS.Number)]
-lda$agency2 = projects$AGENCY[match(lda$b_id,projects$EIS.Number)]
 
-
+lda <- lda[a_file %in% str_replace(docs$FILE_NAME,'pdf$','txt'),]
+lda <- lda[b_file %in% str_replace(docs$FILE_NAME,'pdf$','txt'),]
 
 # test = lda[score>300&score<350,]
 # test[agency1=='Federal Energy Regulatory Commission'&agency2 == 'Federal Energy Regulatory Commission']
@@ -117,190 +123,30 @@ agency_summary_stats$mean = round(agency_summary_stats$mean,3)
 agency_summary_stats$median = round(agency_summary_stats$median,3)
 
 
-projects[projects$EIS.Number %in% countover300[over300/total_pages>0.3]$EIS.Number]
-
-
 (gg_pages_over_300 = ggplot() + 
     #  geom_jitter(data = countover300,aes(x = fct_rev(AGENCY_SHORT),y = over300/total_pages),pch = 21,colour = 'grey50') + 
-    geom_boxplot(data = countover300,aes(x = fct_rev(AGENCY_SHORT),y = over300/total_pages),fill = NA) + 
-    #geom_jitter(data = countover300,aes(x = fct_rev(AGENCY_SHORT),y = over300/total_pages),fill = NA,height = 0,pch = 21) + 
-    
-    coord_flip() +
+    #geom_boxplot(data = countover300,aes(x = fct_rev(AGENCY_SHORT),y = over300/total_pages),fill = NA) + 
+    geom_jitter(data = countover300,aes(x = fct_rev(AGENCY_SHORT),y = over300/total_pages),alpha = 0.5,fill = NA,height = 0,pch = 21) + 
+    geom_point(data = countover300[,median(over300/total_pages),by=.(AGENCY_SHORT)],
+               aes(x = fct_rev(AGENCY_SHORT),y = V1,col ='red'),pch = '|',size = 5)+
+    coord_flip() + scale_color_manual(values = 'red',name = 'Agency median')+
     #    ggplot2::annotate("label",x = fct_rev(agency_summary_stats$AGENCY_SHORT),y = agency_summary_stats$median*1.5,label = agency_summary_stats$median) + 
-    theme_bw() + scale_y_continuous(name = '# pages w/ LDA>300 / total pages by project',limits=c(0,1)) + 
-    theme(axis.title.y = element_blank(),axis.text = element_text(size = 12)) + ggtitle("Text reuse between EISs by project and agency"))
+    theme_bw() + scale_y_continuous(name = '# pages w/ LDA>300 / total pages by project',limits=c(0,0.5)) + 
+    theme(axis.title.y = element_blank(),legend.position = c(0.8,0.25),axis.text = element_text(size = 12)) + ggtitle("Text reuse between EISs by project and agency"))
 
-projects[EIS.Number %in% c( 20150181 )]
-
-ggsave(gg_pages_over_300,filename = 'output/boilerplate/figures/agencies_lda_over_300.png',dpi = 300,units = 'in',height = 4.5,width = 6)
-saveRDS(countover300,'scratch/boilerplate/eis_between_over300_pagecount.RDS')
+ggsave(gg_pages_over_300,filename = 'boilerplate_project/output/figures/agencies_lda_over_300.png',dpi = 300,units = 'in',height = 4.5,width = 6)
 
 
-lda_ea_solo = rbind(lda[,.(a_id,score,a,a_file)],lda[,.(b_id,score,b,b_file)],use.names = F)
-lda_ea_solo$AGENCY = projects$AGENCY[match(lda_ea_solo$a_id,projects$EIS.Number)]
-lda_ea_solo = lda_ea_solo[AGENCY %in% c('Forest Service','Bureau of Land Management','Department of Energy'),]
-
-ea_over300 = lda_ea_solo
-ea_over300 = ea_over300[order(-score),][!duplicated(a),]
-#ea_over300 = ea_over300[!a_file%in%str_remove(badfiles,'.*--'),]
-ea_countover300 = ea_over300[,.N,by = .(a_id,AGENCY)]
-setnames(ea_countover300,c('a_id','N'),c('EIS.Number','over300'))
-ea_countover300 = data.table(ea_countover300)
-
-ea_countover300 = merge(ea_countover300,page_counts[EIS.Number %in% projects$EIS.Number[projects$AGENCY %in% c('Department of Energy','Forest Service','Bureau of Land Management')],],all = T)
-ea_countover300$over300[is.na(ea_countover300$over300)] <- 0
-
-
-ea_countover300$AGENCY[ea_countover300$AGENCY=='Department of Energy'] <- 'DOE'
-ea_countover300$AGENCY[ea_countover300$AGENCY=='Forest Service'] <- 'FS'
-ea_countover300$AGENCY[ea_countover300$AGENCY=='Bureau of Land Management'] <- 'BLM'
-ea_countover300$PROJECT_TYPE = projects$PROJECT_TYPE[match(ea_countover300$EIS.Number,projects$EIS.Number)]
-
-
-ea_countover300[,median(total_pages),by=.(AGENCY,PROJECT_TYPE)]
-ea_countover300[,median(over300/total_pages),by=.(AGENCY,PROJECT_TYPE)]
-
-ea_countover300[PROJECT_TYPE=='EA'&total_pages>3000,]
-
-ea_countover300[,list(median(total_pages)),by=.(AGENCY,PROJECT_TYPE)]
-ea_countover300[,list(median(over300/total_pages)),by=.(AGENCY,PROJECT_TYPE)]
-
-
-(ea_vs_eis_pagecount = ggplot(ea_countover300) + geom_boxplot(aes(x = AGENCY,y = total_pages,col = PROJECT_TYPE)) + coord_flip() +
-    ggtitle("Pages analyzed") +
-    theme_bw() + scale_y_continuous(name = '# pages by project') + 
-    theme(axis.title.y = element_blank(),legend.position = c(0.8,0.4),
-          legend.title = element_blank(),text = element_text(size = 10)) + 
-    scale_color_brewer(labels = c('EA','EIS'),type = 'qual',palette = 2))
-
-
-(ea_vs_eis_plot = ggplot(ea_countover300) + 
-    geom_boxplot(aes(x = AGENCY,y = over300/total_pages,col = PROJECT_TYPE)) + coord_flip() +
-    ggtitle("High reuse between projects") +
-    theme_bw() + scale_y_continuous(name = 'LDA>300 / total pages') + 
-    theme(axis.title.y = element_blank(),legend.position = c(0.8,0.4),
-          legend.title = element_blank(),text = element_text(size = 10))+ 
-    scale_color_brewer(labels = c('EA','EIS'),type = 'qual',palette = 2))
-
-lay <- rbind(c(1,1,1,1,1,2,2,2,2))
-ggsave(grid.arrange(ea_vs_eis_pagecount,ea_vs_eis_plot,ncol = 2),units = 'in',width = 6,height = 4,dpi = 300,filename = 'output/boilerplate/figures/case_ea_vs_eis_over300.png')
-
-saveRDS(ea_countover300,'scratch/boilerplate/ea_between_over300_pagecount.RDS')
-
-
-# sample_score = 300
-# show_example = lda[score>sample_score&a_id!=b_id,][a_id %in% projects$EIS.Number[projects$PROJECT_TYPE=='EIS'] & b_id %in% projects$EIS.Number[projects$PROJECT_TYPE=='EIS'],]
-# library(htmlTable)
-# head(show_example)
-# #sm = sample(1:nrow(show_exm))
-# sm = sample(which(show_example$score>550&show_example$score<600 & show_example$agency1!='Bureau of Land Management'),1)
-
-#> show_example$a[sm]
-#[1] "20130046--20130046_Mid Fork American FEIS FERC 2079.pdf--335"
-#> show_example$b[sm]
-#[1] "20130378--20130378_Toledo Bend Hydro Project FEIS.pdf--199"
-# file1 = fread(paste0(text_storage,show_example[sm,]$f1),sep = '\t')
-# file2 = fread(paste0(text_storage,show_example[sm,]$f2),sep = '\t')
-# id1 = file1$EIS.Number[1]
-# id2 = file2$EIS.Number[1]
-# page1 = file1[Project_File_Par==show_example[sm,]$a,]
-# page2 = file2[Project_File_Par==show_example[sm,]$b,]
-
-#> show_example$a[9869]
-#[1] "20160104--20160104_08a_Chapter_3_Affected_Environment_and_Environmental_Consequences_Part 1.pdf--75"
-#> show_example$b[9869]
-#[1] "20170008--20170008_008a_Ch3_AffectEnv-EnvConseq.pdf--73"
-
-# > page1$Project_File_Par
-# [1] "20130252--20130252_Hawaii-Southern_California_Training_and_Testing_Final_EIS-OEIS_Vol_I.pdf--132"
-# > page2$Project_File_Par
-# [1] "20150281--20150281_Northwest Training and Testing Final EIS-OEIS Volume 1.pdf--126"
-# 
-# sample_local = align_local(page1$text,page2$text)
-# side_by_side = cbind(sample_local$a_edits,sample_local$b_edits)
-# colnames(side_by_side) <- c(paste(epa_record$Agency[epa_record$EIS.Number==id1],epa_record$Title[epa_record$EIS.Number==id1],sep = ': '),
-#                             paste(epa_record$Agency[epa_record$EIS.Number==id2],epa_record$Title[epa_record$EIS.Number==id2],sep = ': '))
-# htmlTable(side_by_side,caption = paste0('LDA score = ',sample_local$score))
-
-# countn = lda[,.N,by = .(a_id,b_id)]
-# score90q = lda[,quantile(score,0.90),by = .(a_id,b_id)]
-# score95q = lda[,quantile(score,0.95),by = .(a_id,b_id)]
-# scoreMax = lda[,max(score),by = .(a_id,b_id)]
-# align800 = lda[score>800,][!duplicated(paste(a_id,b_id)),]
-text_ids = unique(flist_dt$EIS.Number)
-projects = projects[!duplicated(projects)&EIS.Number %in% text_ids,]
-eis_used = projects[PROJECT_TYPE == 'EIS',]
-doe_used = projects[AGENCY == 'Department of Energy',]
-blm_used = projects[AGENCY == 'Bureau of Land Management',]
-usfs_used = projects[AGENCY == 'Forest Service',]
-
-lda_eis = lda[a_id %in% eis_used$EIS.Number&b_id %in% eis_used$EIS.Number,]
-lda_eis = lda_eis[a_id != b_id,]
-lda_eis$agencyA = projects$AGENCY[match(lda_eis$a_id,projects$EIS.Number)]
-lda_eis$agencyB = projects$AGENCY[match(lda_eis$b_id,projects$EIS.Number)]
-# 
-
-
-# agency_avgs = rbindlist(lapply(unique(c(lda_eis$agencyA,lda_eis$agencyB)),function(x)
-#   data.table(Agency = x,
-#              Comps = sum(lda_eis$agencyA==x|lda_eis$agencyB==x),
-#              q25 = quantile(lda_eis$score[lda_eis$agencyA==x|lda_eis$agencyB==x],0.25),
-#              q75 = quantile(lda_eis$score[lda_eis$agencyA==x|lda_eis$agencyB==x],0.75),
-#              Avg_Score = mean(lda_eis$score[lda_eis$agencyA==x|lda_eis$agencyB==x]),
-#              Median_Score = median(lda_eis$score[lda_eis$agencyA==x|lda_eis$agencyB==x]),
-#              Min_Score = min(lda_eis$score[lda_eis$agencyA==x|lda_eis$agencyB==x]),
-#              Max_Score = max(lda_eis$score[lda_eis$agencyA==x|lda_eis$agencyB==x]))))
-# 
-# agency_avgs$Agency_Short = epa_record$Agency_Short[match(agency_avgs$Agency,epa_record$Agency)]
-# pages = fread('scratch/pages_by_project.csv')
-# pages$Agency = epa_record$Agency[match(pages$pid,epa_record$EIS.Number)]
-# pages_by_agency = pages[,sum(N),by = .(Agency)]
-# agency_avgs$Total_Pages = pages_by_agency$V1[match(agency_avgs$Agency,pages_by_agency$Agency)]
-
-# ggplot(agency_avgs,aes(x = Comps)) + 
-#   geom_segment(aes(x = Comps,xend=Comps,y = q25,yend= q75)) + 
-#   geom_point(aes(y = Median_Score)) 
-# require(htmlTable)
-# require(ggrepel)
-# htmlTable(agency_avgs[,.(Agency,Total_Pages,Comps,Min_Score,round(Avg_Score),floor(Median_Score),Max_Score)])
-# 
-# ggplot(data = agency_avgs,aes(x = Avg_Score,y = Comps,label = Agency_Short)) + 
-#   geom_label_repel()
-
-lda_doe = lda[a_id %in% doe_used$EIS.Number&b_id %in% doe_used$EIS.Number,]
-lda_doe = lda_doe[a_id != b_id,]
-lda_blm = lda[a_id %in% blm_used$EIS.Number&b_id %in% blm_used$EIS.Number,]
-lda_blm = lda_blm[a_id != b_id,]
-lda_usfs = lda[a_id %in% usfs_used$EIS.Number&b_id %in% usfs_used$EIS.Number,]
-lda_usfs = lda_usfs[a_id != b_id,]
-
-n_eis = nrow(eis_used)
-n_blm = nrow(blm_used)
-n_usfs = nrow(usfs_used)
-n_doe = nrow(doe_used)
-
-eis_ids = sort(eis_used$EIS.Number)
-blm_ids = sort(blm_used$EIS.Number)
-doe_ids = sort(doe_used$EIS.Number)
-usfs_ids = sort(usfs_used$EIS.Number)
-
+eis_ids = unique(projects$EIS.Number[projects$USE_DOCS])
+n_eis = length(eis_ids)
 eis_blank_mat = matrix(0,ncol = n_eis,nrow = n_eis,dimnames = list(eis_ids,eis_ids))
-doe_blank_mat = matrix(0,ncol = n_doe,nrow = n_doe,dimnames = list(doe_ids,doe_ids))
-blm_blank_mat = matrix(0,ncol = n_blm,nrow = n_blm,dimnames = list(blm_ids,blm_ids))
-usfs_blank_mat = matrix(0,ncol = n_usfs,nrow = n_usfs,dimnames = list(usfs_ids,usfs_ids))
 
-
-geo = readRDS(paste0('scratch/','ngaz_matches_V3.RDS'))
+geo = readRDS('boilerplate_project/data_products/geo_temp.rds')
 geo = geo[!is.na(PRIM_LONG_DEC)&!is.na(PRIM_LAT_DEC),]
 geo = geo[PRIM_LAT_DEC>16,]
 geo$PRIM_LONG_DEC[geo$PRIM_LONG_DEC>170] <- geo$PRIM_LONG_DEC[geo$PRIM_LONG_DEC>170] * -1
-
-project_centroids = geo[,list(mean(PRIM_LONG_DEC),mean(PRIM_LAT_DEC)),by = .(EIS.Number)]
-
-blm_ea_centroids = project_centroids[EIS.Number %in% projects$EIS.Number[projects$AGENCY=='Bureau of Land Management'&projects$PROJECT_TYPE=='EA'],]
-
-blm_ea_centroids = left_join(blm_ea_centroids,ea_countover300)
-
+project_centroids = geo[,list(mean(PRIM_LONG_DEC),mean(PRIM_LAT_DEC)),by = .(PROJECT_ID)]
+setnames(project_centroids,'PROJECT_ID','EIS.Number')
 us_states  = tigris::states(class = 'sf',year = 2015)
 us_states = us_states[!us_states$STUSPS %in%  c('VI','MP','GU','AS'),]
 # 
@@ -326,208 +172,24 @@ project_dist = dist(as.matrix(project_centroids[order(EIS.Number),.(V1,V2)]),upp
 dist_mat = log(as.matrix(project_dist)+0.001)
 project_centroids$EIS.Number -> rownames(dist_mat) -> colnames(dist_mat)
 
-
-# 
-# ent_loc = 'scratch/boilerplate/project_name_entities/'
-# fl = list.files(ent_loc,full.names = T)
-#  library(data.table)
-#  library(pbapply)
-#  library(rvest)
-# ents = pblapply(fl,fread)
-# cls = lapply(ents,class)
-# redo = which(sapply(cls,length)!=2)
-# for (r in redo){
-# ents[[r]]<-fread(paste0(ent_loc,fl[r]))
-# }
-# ent_dt = rbindlist(ents,use.names=T,fill=T)
-# fwrite(ent_dt,'scratch/all_entity_datatable.csv')
-
-
-ent_dt = fread('scratch/all_entity_datatable.csv')
-ent_dt$name[grepl('STRATIFIED ENVIRONMENTAL (&|AND) ARCHAEOLOGICAL',toupper(ent_dt$name))] <- "STRATIFIED ENVIRONMENTAL & ARCHAEOLOGICAL SERVICES, LLC"
-ent_dt$name[grepl('WALSH ENVIRON',toupper(ent_dt$name))] <- "WALSH ENVIRONMENTAL SCIENTISTS AND ENGINEERS, LLC"
-ent_dt$name[grepl('KERLINGER',toupper(ent_dt$name))] <- "CURRY & KERLINGER, LLC"
-ent_dt$name[grepl('SOLV LLC',toupper(ent_dt$name))|toupper(ent_dt$name)=='SOLV'] <- 'SOLVE, LLC'
-ent_dt$name[grepl('GRETTE ASSOC',toupper(ent_dt$name))] <- "GRETTE ASSOCIATES, LLC"
-ent_dt$name[grepl('^HELIA ENV',toupper(ent_dt$name))] <- "HELIA ENVIRONMENTAL, LLC"
-ent_dt$name[grepl('PEAK ECOLOG',toupper(ent_dt$name))] <- "PEAK ECOLOGICAL SERVICES, LLC"
-ent_dt$name[grepl('ALPINE GEOPHYSICS',toupper(ent_dt$name))] <- "ALPINE GEOPHYSICS, LLC"
-ent_dt$name[grepl("HAYDEN(\\s|-)WING",toupper(ent_dt$name))]<- "HAYDEN-WING ASSOCIATES, LLC"
-ent_dt$name[grepl("WILD TROUT ENTERPRISES",toupper(ent_dt$name))] <- "WILD TROUT ENTERPRISES, LLC"
-ent_dt$name[grepl("ZEIGLER GEOLOGIC",toupper(ent_dt$name))] <- "ZEIGLER GEOLOGIC CONSULTING, LLC"
-ent_dt$name[grepl("NORTHERN LAND USE",toupper(ent_dt$name))] <- "NORTHERN LAND USE RESEARCH ALASKA, LLC"
-ent_dt$name[grepl("LEGACY LAND",toupper(ent_dt$name))] <- "LEGACY LAND & ENVIRONMENTAL SOLUTIONS, LLC"
-ent_dt$name[grepl("SOUTHWEST GEOPHY",toupper(ent_dt$name))] <- 'SOUTHWEST GEOPHYSICAL CONSULTING, LLC'
-ent_dt$name[grepl("SYRACUSE ENVIRONMENTAL RESEARCH ASSOCIATES",toupper(ent_dt$name))] <- "SYRACUSE ENVIRONMENTAL RESEARCH ASSOCIATES"
-ent_dt$name[grepl("ANDERSON PERRY (&|AND) ASSOCIATES",toupper(ent_dt$name))] <- "ANDERSON PERRY & ASSOCIATES, INC." 
-ent_dt$name[grepl("VEATCH",toupper(ent_dt$name))] <- "BLACK & VEATCH" 
-ent_dt$name[grepl("TETRA TECH",toupper(ent_dt$name))] <- "TETRA TECH INC." 
-ent_dt$name[grepl("FLUOR",toupper(ent_dt$name))] <- "FLUOR CORP." 
-ent_dt$name[grepl('\\bERM\\b',ent_dt$name)] <- "ERM" 
-ent_dt$name[grepl('\\bKiewit\\b',ent_dt$name)] <- "KIEWIT CORP." 
-ent_dt$name[grepl('\\bArcadis\\b',ent_dt$name)] <- "ARCADIS NV" 
-ent_dt$name[grepl('\\bECC\\b',ent_dt$name)] <- "ECC" 
-ent_dt$name[grepl('\\bMWH\b',ent_dt$name)] <- "MWH CONSTRUCTORS, INC." 
-ent_dt$name[grepl("MOTT MACDONALD",toupper(ent_dt$name))] <- "MOTT MACDONALD" 
-ent_dt$name[grepl("AECOM",toupper(ent_dt$name))] <- "AECOM" 
-ent_dt$name[grepl("RAMBOLL",toupper(ent_dt$name))] <- "RAMBOLL"
-ent_dt$name[grepl("GOLDER ASSOCIATES",toupper(ent_dt$name))] <-"GOLDER ASSOCIATES CORP."
-other_consultants =  c("STRATIFIED ENVIRONMENTAL & ARCHAEOLOGICAL SERVICES, LLC",
-                       "WALSH ENVIRONMENTAL SCIENTISTS AND ENGINEERS, LLC",
-                       "CURRY & KERLINGER, LLC",
-                       'SOLVE, LLC',
-                       "GRETTE ASSOCIATES, LLC",
-                       "HELIA ENVIRONMENTAL, LLC",
-                       "PEAK ECOLOGICAL SERVICES, LLC",
-                       "ALPINE GEOPHYSICS, LLC",
-                       "HAYDEN-WING ASSOCIATES, LLC",
-                       "WILD TROUT ENTERPRISES, LLC",
-                       "ZEIGLER GEOLOGIC CONSULTING, LLC",
-                       "NORTHERN LAND USE RESEARCH ALASKA, LLC",
-                       "LEGACY LAND & ENVIRONMENTAL SOLUTIONS, LLC",
-                       'SOUTHWEST GEOPHYSICAL CONSULTING, LLC',
-                       "ALPINE ENVIRONMENTAL CONSULTANTS, LLC",
-                       "SYRACUSE ENVIRONMENTAL RESEARCH ASSOCIATES",
-                       "NUTTER AND ASSOCIATES",
-                       "GARCIA AND ASSOCIATES","HORIZON ENVIRONMENTAL SERVICES, INC.",
-                       "WESTERN ECOSYSTEMS TECHNOLOGY, INC.",
-                       "ANDERSON PERRY & ASSOCIATES, INC." )
-
-ent_dt$type[ent_dt$name %in% other_consultants]<-'ORGANIZATION'
-ent_dt$type[grepl("CONSULTING",toupper(ent_dt$name))]<-'ORGANIZATION'
-
-#### make author matrix ####
-people = ent_dt[type == 'PERSON',]
-people = people[!grepl('Louis Berger|CDM S',name),]
-people = people[!grepl('\\W[a-z]',name),]
-exclude = c('Coordinator','Wildlife Biologist','Native American','Public Involvement PERSONS','Air Resource Specialist','Wild Horse')
-badstrings = c('Applicant','Appendix','Economic','Analysis','Locator','Botanist','Native','Register','FR Doc','Resident','Population','Hydro','Botany','Specialist','Planner','Biologist','Analyst','Recreation','[0-9]','Friends','Geologic','Heritage','Petroleum','Advocates','CD-IV','Scientist','Science','Associates','Biological','Manager',"Director",'Coordinator','Basin','Creek','Habitat')
-people = people[!name %in% exclude,]
-people = people[!grepl(paste(badstrings,collapse='|'),name),]
-people = people[!grepl('[A-Z]{4,}',name),]
-people = people[!grepl('\\.$',name),]
-people = people[!grepl(paste(paste0('(^|\\W)',state.abb,'\\W'),collapse = '|'),name),]
-people = people[!duplicated(people),]
-people = people[!name %in% people[,.N,by = .(name)][N==1,]$name,]
-author_matrix = as.matrix(table(people$name,people$EIS.Number))
+people = readRDS('boilerplate_project/data_products/person_entities_extracted.RDS')
+author_matrix = as.matrix(table(people$name,people$PROJECT_ID))
 notin = projects$EIS.Number[!projects$EIS.Number%in% colnames(author_matrix)]
 addin = matrix(0,nrow = nrow(author_matrix),ncol = length(notin),dimnames = list(rownames(author_matrix),sort(notin)))
 author_matrix_full = cbind(author_matrix,addin)
-
 author_matrix_full = author_matrix_full[rowSums(author_matrix_full)>1,]
 author_triplet =  slam::as.simple_triplet_matrix(author_matrix_full)
 project_to_project_author_matrix = slam::crossprod_simple_triplet_matrix(author_triplet)
 
 
-#ent_dt[type=='PERSON',.N,by=.(name)][order(-N),][1:200]
-#ent_loc = 'scratch/boilerplate/project_name_entities/'
-#rds_preps = readRDS('scratch/boilerplate/preparer_pages.rds')
-#rds_preps = rds_preps[!duplicated(rds_preps),]
+consults = readRDS('boilerplate_project/data_products/consultant_project_matches.RDS')
+setnames(consults,'PROJECT_ID','EIS.Number')
+consult_Freq = consults[EIS.Number %in% projects$EIS.Number[projects$USE_DOCS],][,.N,by = .(FIRM)][order(-N)][N>=10,]
 
-### make consult matrix ####
-orgs = ent_dt[type == 'ORGANIZATION'|grepl('Louis Berger|CDM S|Battelle',name),]
-orgs$name[grepl('Battelle',orgs$name)]<-'Battelle'
-
-#firm_names_css = 'td:nth-child(5)'
-#  enr2019_1 = 'https://www.enr.com/toplists/2019-Top-200-Environmental-Firms-1'
-#  enr2019_2 = 'https://www.enr.com/toplists/2019-Top-200-Environmental-Firms-2'
-#  enr2018_1 = 'https://www.enr.com/toplists/2018-Top-200-Environmental-Firms-1'
-#  enr2018_2 = 'https://www.enr.com/toplists/2018-Top-200-Environmental-Firms-2'
-#  enr2017_1 = 'https://www.enr.com/toplists/2017-Top-200-Environmental-Firms-1'
-#  enr2017_2 = 'https://www.enr.com/toplists/2017-Top-200-Environmental-Firms-2'
-#  des2019_1 = 'https://www.enr.com/toplists/2019-Top-500-Design-Firms1'
-#  des2019_2 = 'https://www.enr.com/toplists/2019-Top-500-Design-Firms2'
-#  des2019_3 = 'https://www.enr.com/toplists/2019-Top-500-Design-Firms3'
-#  des2019_4 = 'https://www.enr.com/toplists/2019-Top-500-Design-Firms4'
-#  des2019_5 = 'https://www.enr.com/toplists/2019-Top-500-Design-Firms5'
-# # 
-# des2017_1 = 'https://www.enr.com/toplists/2017-Top-500-Design-Firms1'
-#  des2017_2 = 'https://www.enr.com/toplists/2017-Top-500-Design-Firms2'
-#  des2017_3 = 'https://www.enr.com/toplists/2017-Top-500-Design-Firms3'
-#  des2017_4 = 'https://www.enr.com/toplists/2017-Top-500-Design-Firms4'
-#  des2017_5 = 'https://www.enr.com/toplists/2017-Top-500-Design-Firms5'
-# # 
-# # 
-#  firm_names_css_2015 = 'td:nth-child(2)'
-#  enr2015_1 = 'https://www.enr.com/toplists/2015_Top_200_Environmental_Firms1'
-#  enr2015_2 = 'https://www.enr.com/toplists/2015_Top_200_Environmental_Firms1'
-# # 
-# # 
-#  des2015_1 = 'https://www.enr.com/toplists/2015_Top_500_Design_Firms1'
-#  des2015_2 = 'https://www.enr.com/toplists/2015_Top_500_Design_Firms2'
-#  des2015_3 = 'https://www.enr.com/toplists/2015_Top_500_Design_Firms3'
-#  des2015_4 = 'https://www.enr.com/toplists/2015_Top_500_Design_Firms4'
-#  des2015_5 = 'https://www.enr.com/toplists/2015_Top_500_Design_Firms5'
-# # 
-#  firm_lists = ls(pattern = 'des201[579]|enr201[579]')
-# # 
-#  firm_scrapes = pblapply(firm_lists,function(x) {if(grepl('2015',x)){
-#    read_html(get(x))%>% html_nodes(firm_names_css_2015) %>% html_text(trim=T)}
-#    else{read_html(get(x))%>% html_nodes(firm_names_css) %>% html_text(trim=T)}
-#    },cl = 1)
-#saveRDS(firm_scrapes,'scratch/enr_firm_lists.RDS')
-
-firm_scrapes = readRDS('scratch/enr_firm_lists.RDS')
-nms = unlist(firm_scrapes)
-clean_names = unique(str_remove(nms,'\\,.+'))
-clean_names = unique(str_remove(clean_names,'\\s\\(.+'))
-clean_names = gsub('|','\\|',clean_names,fixed = T)
-clean_names = gsub('&','\\&',clean_names,fixed = T)
-#length(unique(toupper(clean_names)))
-#orgs$name = orgs$name
-orgs$name[grep('CDM\\b|CDM SM',orgs$name)] <- 'CDM SMITH'
-orgs$NAME = toupper(orgs$name)
-
-# 
-#
-
-#  mcores = 1
-#  match1 = pblapply(clean_names,function(x) {grep(paste0('\\b',x,'\\b'),orgs$name)})
-#  match2 = pblapply(tm::removePunctuation(clean_names),function(x) grep(paste0('\\b',x,'\\b'),orgs$name),cl = mcores)
-#  match3 = pblapply(str_remove(clean_names,'Inc\\.$|LLC$|LLC\\.$|Corp\\.$'),function(x) grep(paste0('\\b',x,'\\b'),orgs$name),cl = mcores)
-#  match1A = pblapply(toupper(clean_names),function(x) {grep(paste0('\\b',x,'\\b'),orgs$NAME)},cl = mcores)
-#  match2B = pblapply(tm::removePunctuation(toupper(clean_names)),function(x) grep(paste0('\\b',x,'\\b'),orgs$NAME),cl = mcores)
-#  match3C = pblapply(str_remove(toupper(clean_names),'INC\\.$|LLC$|LLC\\.$|CORP\\.$'),function(x) grep(paste0('\\b',x,'\\b'),orgs$NAME),cl = mcores)
-# # 
-# # # # # # 
-# name_matches = mapply(function(m1,m2,m3,m4,m5,m6) unique(c(m1,m2,m3,m4,m5,m6)),m1 = match1,m2 = match2,m3 = match3,m4 = match1A,m5 = match2B,m6 = match3C)
-#      consultant_project_matches = pblapply(seq_along(name_matches),function(x) {data.table(EIS.Number = orgs$EIS.Number[name_matches[[x]]],FIRM = clean_names[x])})
-#      saveRDS(consultant_project_matches,'scratch/consultant_project_matches.RDS')
-
-consultant_project_matches = readRDS('scratch/consultant_project_matches.RDS')
-consults = rbindlist(consultant_project_matches)[!is.na(EIS.Number)]
-consults$FIRM = toupper(consults$FIRM)
-consults = consults[!duplicated(consults),]
-
-handcoded_firms = orgs[NAME %in% other_consultants,.(EIS.Number,NAME)]
-setnames(handcoded_firms,'NAME','FIRM')
-autocoded_firms = orgs[grepl('CONSULTING|CONSULTANTS',NAME),.(EIS.Number,NAME)]
-setnames(autocoded_firms,'NAME','FIRM')
-
-consults = rbindlist(list(consults,handcoded_firms,autocoded_firms))
-consults = consults[!duplicated(consults),]
-
-
-
-consults = consults[!FIRM%in%c('NELSON','LITTLE','JOHNSON','WOOD','ENGLAND'),]
-consults$FIRM[consults$FIRM=='ICF'] <- 'ICF INTERNATIONAL'
-consults$FIRM[grepl('LEIDOS',consults$FIRM)] <- 'LEIDOS INC.'
-consults$FIRM[grepl('PARSONS',consults$FIRM)] <- 'PARSONS CORP'
-consults$FIRM[grepl('CARDNO',consults$FIRM)] <- 'LEIDOS INC.'
-consults$FIRM[grepl('STANTEC',consults$FIRM)] <- 'STANTEC INC.'
-consults$FIRM[grepl('PARAMETRIX',consults$FIRM)] <- 'PARAMETRIX INC.'
-consults$FIRM[grepl('SWCA ENVIRONMENTAL',consults$FIRM)] <- 'SWCA ENVIRONMENTAL CONSULTANTS'
-consults$FIRM[grepl('CH2M',consults$FIRM)] <- 'CH2M HILL'
-consults = consults[FIRM!='WHITMAN',]
-consults = consults[FIRM!='STEWART',]
-consults = consults[FIRM!='PAGE',]
-consult_Freq = consults[EIS.Number %in% epa_record$EIS.Number,][,.N,by = .(FIRM)][order(-N)][N>=5,]
-
-#consults[EIS.Number %in% epa_record$EIS.Number,][,.N,by = .(FIRM)][order(-N)][1:25,]
-
-outdir.tables = "output/boilerplate/tables/" 
+#consults[PROJECT_ID %in% epa_record$EIS.Number,][,.N,by = .(FIRM)][order(-N)][1:25,]
+require(htmlTable)
 tableout <-htmlTable(consult_Freq)
-outdir.tables = "output/boilerplate/tables/" 
+outdir.tables = 'boilerplate_project/output/tables/'
 sink(paste0(outdir.tables,"consultant_table.html"))
 print(tableout,type="html",useViewer=F)
 sink()
@@ -541,29 +203,14 @@ consult_matrix_full = cbind(consult_matrix,addin)
 consult_triplet =  slam::as.simple_triplet_matrix(consult_matrix_full)
 project_to_project_consult_matrix = slam::crossprod_simple_triplet_matrix(consult_triplet)
 
+lit_dt = fread('boilerplate_project/data_products/nepa_litigation_by_agency_year.csv')
+ldt_long = melt(lit_dt,id.vars = 'recode',measure.vars = patterns('y[0-9]'))
+ldt_long$year <- as.numeric(str_remove(ldt_long$variable,'[a-z]'))
+ltd_total = ldt_long[year<2013,][,sum(value,na.rm = T),by=.(recode)]
 
 
-lit_dt = fread('input/metadata/nepa_case_filings_2001_2012.csv')
-lit_dt$AGENCY_SHORT[lit_dt$AGENCY_SHORT=='FHA']<-'FHWA'
-#lit = fread('input/metadata/NEPA litigation - Sheet1.csv',na.strings = 'NA')
-#lit_dt = melt(lit)
-#lit_dt = lit_dt[,sum(value,na.rm=T),by = .(agency,variable)]
-#projects$AGENCY_SHORT = epa_record$Agency_Short[match(projects$EIS.Number,epa_record$EIS.Number)]
-#lit_dt$variable = gsub('y','',lit_dt$variable)
-#lit_dt[order(agency,variable),litigation2001topresent:=cumsum(V1),by=.(agency)]
-#lit_dt[order(agency,variable),litigation2001ToPriorYear:=lag(litigation2001topresent),by=.(agency)]
-#lit_dt = lit_dt[variable==2013,]
-#lit_dt = lit_dt[agency %in% epa_record$Agency_Short,]
-lit_dt$FEISs_during_Period = feis_2001_to_2012$N[match(lit_dt$AGENCY_SHORT,feis_2001_to_2012$Agency_Short)]
-lit_dt$litigation_per_feis = lit_dt$Case_Filings_2001_2012/lit_dt$FEISs_during_Period
-projects[PROJECT_TYPE=='EIS',.N,by=.(AGENCY)]
 
 
-ggplot(lit_dt[order(litigation_per_feis),],aes(x = FEISs_during_Period,y = litigation_per_feis)) + ggtitle('NEPA litigations, 2001 to 2012') + 
-  geom_text(aes(label = AGENCY_SHORT)) + ggtitle('FEISs and NEPA case filings from 2001 to 2012') + ylab('filings/FEIS published') + xlab('FEISs published')
-
-
-epa_record[,.N,by=.(Agency)][order(-N)]
 
 
 library(lubridate)
