@@ -22,11 +22,13 @@ if(!require(parallel)){install.packages('parallel');require(parallel)}
 if(!require(doParallel)){install.packages('doParallel');require(doParallel)}
 if(!require(textreuse)){install.packages('textreuse');require(textreuse)}
 if(!require(tidyverse)){install.packages('tidyverse');require(tidyverse)}
+if(!require(benchmarkme)){install.packages('benchmarkme');require(benchmarkme)}
 #setwd("google_drive/tuolumne/")
 #setDTthreads(3)
 #getDTthreads()
-mcores = floor(detectCores() - 16 )
-options("mc.cores" = floor(detectCores() - 16))
+cores = detectCores()
+mcores = floor(detectCores()-5)
+options("mc.cores" = floor(detectCores() -5))
 
 #table(projects$AGENCY,projects$PROJECT_TYPE)
 projects = fread('boilerplate_project/data_products/project_candidates_eis_only.csv')
@@ -46,6 +48,8 @@ parallel::clusterEvalQ(cluster,'require(textreuse)')
 #hash_file = paste0('../bucket_mount/big_eis_text.rds')
 full_tlist <- readRDS('../bucket_mount/tuolumne/scratch/boilerplate/big_text_files/big_eis_text.rds')
 
+
+full_tlist$text = gsub('\"\"','',full_tlist$text,fixed = T)
 chars = nchar(full_tlist$text)
 periods = stringr::str_count(full_tlist$text,"\\.")
 numbers = stringr::str_count(full_tlist$text,"[0-9]")
@@ -63,6 +67,7 @@ hash_file = paste0(scratch_loc,'eis_page_hashes.rds')
 flist = as.character(full_tlist$text)
 names(flist) <- paste0(full_tlist$File,'_',full_tlist$Page)
 
+summary(nchar(full_tlist$text))
  eis_corpus =  TextReuseCorpus(text = flist,
                                meta = list(File = full_tlist$File,Page = full_tlist$Page),
                                tokenizer = tokenize_ngrams, n = 10,
@@ -71,17 +76,19 @@ names(flist) <- paste0(full_tlist$File,'_',full_tlist$Page)
  gc()
 #saveRDS(eis_corpus,'../bucket_mount/tuolumne/scratch/eis_page_corp_scratch.rds')
 
+ 
 #eis_corpus = readRDS('../bucket_mount/tuolumne/scratch/eis_page_corp_scratch.rds')
 #file.exists('../bucket_mount/tuolumne/scratch/eis_page_corp_scratch.rds')
 split_corpus_ntiles = dplyr::ntile(x = seq(eis_corpus),n = mcores*10)
 split_corpus = split(eis_corpus,split_corpus_ntiles)
- 
+rm(eis_corpus)
+gc()
 split_buckets = foreach(x = split_corpus) %dopar% {textreuse::lsh(x,bands = 60)}
 gc()
 # 
 while(any(sapply(split_buckets,is.null))){
    null_fails = which(sapply(split_buckets,is.null))
-   split_buckets[null_fails] <- pblapply(null_fails,function(x) lsh(split_corpus[[x]],bands = 40,progress = F),cl = 5)
+   split_buckets[null_fails] <- pblapply(null_fails,function(x) lsh(split_corpus[[x]],bands = 60,progress = F),cl = 5)
  }
 
  eis_buckets = do.call(rbind,split_buckets)
