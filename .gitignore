@@ -17,3 +17,4 @@ output/
 *.Rout
 */*.Rout
 
+.DS_Store
