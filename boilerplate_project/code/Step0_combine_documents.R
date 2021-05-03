@@ -31,7 +31,7 @@ epa = epa[!EIS.Number%in% c('20170008','20170006'),]
 epa = epa[!EIS.Number %in% c('20200182')]
 #ACOE adoption of FWHA EIS
 epa = epa[!EIS.Number %in% c('20150181')]
-
+epa = epa[Agency!='California Department of Transportation',]
 
 #epa = epa[!EIS.Number%in%c(20170006,20170006),]
 

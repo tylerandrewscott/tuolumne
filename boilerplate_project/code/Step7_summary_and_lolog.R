@@ -33,21 +33,31 @@ projects$DECISION[grepl('(US|I|SR)(-|\\s)[0-9]{1,3}|\\WPROJECT(S|)(\\W|$)|NAVIGA
 projects$DECISION[projects$clean.title %in% c("Sabine Pass to Galveston Bay","Everglades Agricultural Area A-1 Shallow Flow Equalization Basin","Ochoco Summit Trail System","Malheur National Forest Site-Specific Invasive Plants Treatment", "Beasley Pond Analysis Area" ,"2016-2020 Fernow Experimental Forest","Lee Canyon EIS","Alton Coal Tract Lease By Application" , "Amoruso Ranch" , "Trout Creek","Rim Fire Recovery","North Fork Wells of Eagle Creek" ,"High Uintas Wilderness Colorado River Cutthroat Trout Habitat Enhancement","Beaver Creek","Sugarloaf Hazardous Fuels Reduction" , "Starry Goat","Little Boulder","Flat Country","South San Francisco Bay Shoreline Phase I" ,"Shasta Lake Water Resources Investigation","Ambler Road Final Environmental Impact Statement","Adams and Denver Counties, Colorado General Investigation Study","Tollgate Fuels Reduction", "Gold Butterfly" ,"RES Americas Moapa Solar Energy Center" ,'Cordova Hills','Riley Ridge to Natrona',"Restoration of the Mariposa Grove of Giant Sequoias" ,"Lassen Lodge Final Environmental Impact Statement","I69 Section 6 Martinsville to Indianapolis","NIH Bethesda Surgery, Radiology, And Lab Medicine Building","Continental United States (CONUS) Interceptor Site")]<-'Project'
 projects$DECISION[projects$clean.title %in% c("FEIS to Address the Presence of Wolves at Isle Royale National Park","BEH Rangeland Allotments","Shoreline II Outfitter/Guide"  ,"Designated Routes and Areas for Motor Vehicle Use (DRAMVU)", "Southwest Coastal Louisiana" , "Central and Southern Florida, Everglades Agricultural Area (EAA), Florida","Previously Issued Oil and Gas Leases in the White River National Forest" , "Powder River Training Complex Ellsworth Air Force Base"  ,"Four-Forest Restoration Initiative  Coconino and Kaibab National Forests" ,"The Management of Conflicts Associated with Double-crested Cormorants","Gulf Regional Airspace Strategic Initiative Landscape Initiative")]<-'Program/policy'
 projects$DECISION[projects$clean.title %in% c("Rocky Mountain Arsenal National Wildlife Refuge", "Antelope Grazing Allotments AMP","Ringo FEIS & FPA")]<-'Plan'
-
-
 projects$AGENCY <- fct_infreq(projects$AGENCY)
 projects$AGENCY_SHORT <- fct_infreq(projects$AGENCY_SHORT)
 
 flist_dt = readRDS('scratch/boilerplate/big_text_files/big_eis_text.rds')
 flist_dt = flist_dt[str_replace(flist_dt$File,'txt$','pdf') %in% docs$FILE_NAME,]
 flist_dt$EIS.Number <- str_remove(flist_dt$File,'_.*')
+flist_dt <- flist_dt[EIS.Number %in% projects$EIS.Number,]
+flist_dt$text = gsub('\"\"','',flist_dt$text,fixed = T)
+chars = nchar(flist_dt$text)
+periods = stringr::str_count(flist_dt$text,"\\.")
+numbers = stringr::str_count(flist_dt$text,"[0-9]")
+caps = stringr::str_count(flist_dt$text,'[A-Z]')
+tildes = stringr::str_count(flist_dt$text,'~')
+quotes = stringr::str_count(flist_dt$text,'\\"')
+spaces = stringr::str_count(flist_dt$text,'\\s')
+
+cut = 0.1
+flist_dt  = flist_dt[chars>400&{periods/chars}<cut&{quotes/chars}<cut&{tildes/chars}<cut&{numbers/chars}<cut&{caps/chars}<cut&{spaces/chars}<{cut*2},]
+
+
 
 
 require(sylcount)
 doc_texts = lapply(unique(flist_dt$EIS.Number),function(x) paste0(flist_dt$text[flist_dt$EIS.Number==x],collapse = ' '))
 names(doc_texts) <- unique(flist_dt$EIS.Number)
-
-readab = readability(unlist(doc_texts,nthreads = 4)
 
 meta_dt = flist_dt[,.(Page,File,EIS.Number)]
 page_counts = meta_dt[,.N,by=.(EIS.Number)]
@@ -112,6 +122,7 @@ over300 = lda_solo[order(-score),][!duplicated(a),]
 countover300 = over300[,.N,by = .(a_id,AGENCY)]
 setnames(countover300,'a_id','EIS.Number')
 setnames(countover300,'N','over300')
+page_counts = page_counts[page_counts$EIS.Number %in% projects$EIS.Number,]
 page_counts$AGENCY = projects$AGENCY[match(page_counts$EIS.Number,projects$EIS.Number)]
 countover300 = merge(countover300,page_counts[EIS.Number %in% projects$EIS.Number,],all = T)
 countover300$AGENCY_SHORT = projects$AGENCY_SHORT[match(countover300$AGENCY,projects$AGENCY)]
@@ -129,13 +140,13 @@ agency_summary_stats$median = round(agency_summary_stats$median,3)
     geom_jitter(data = countover300,aes(x = fct_rev(AGENCY_SHORT),y = over300/total_pages),alpha = 0.5,fill = NA,height = 0,pch = 21) + 
     geom_point(data = countover300[,median(over300/total_pages),by=.(AGENCY_SHORT)],
                aes(x = fct_rev(AGENCY_SHORT),y = V1,col ='red'),pch = '|',size = 5)+
-    coord_flip() + scale_color_manual(values = 'red',name = 'Agency median')+
+    coord_flip() + scale_color_manual(values = 'red',name = 'Agency median',labels = 'Agency median')+
     #    ggplot2::annotate("label",x = fct_rev(agency_summary_stats$AGENCY_SHORT),y = agency_summary_stats$median*1.5,label = agency_summary_stats$median) + 
-    theme_bw() + scale_y_continuous(name = '# pages w/ LDA>300 / total pages by project',limits=c(0,0.5)) + 
-    theme(axis.title.y = element_blank(),legend.position = c(0.8,0.25),axis.text = element_text(size = 12)) + ggtitle("Text reuse between EISs by project and agency"))
+    theme_bw() + scale_y_continuous(name = '# pages w/ LDA>300 / total pages by project') + 
+                                    #limits=c(0,round(max(countover300$over300/countover300$total_pages) ,1))) + 
+    theme(legend.title = element_blank(),axis.title.y = element_blank(),legend.position = c(0.8,0.25),axis.text = element_text(size = 12)) + ggtitle("Text reuse between EISs by project and agency"))
 
 ggsave(gg_pages_over_300,filename = 'boilerplate_project/output/figures/agencies_lda_over_300.png',dpi = 300,units = 'in',height = 4.5,width = 6)
-
 
 eis_ids = unique(projects$EIS.Number[projects$USE_DOCS])
 n_eis = length(eis_ids)
@@ -145,7 +156,11 @@ geo = readRDS('boilerplate_project/data_products/geo_temp.rds')
 geo = geo[!is.na(PRIM_LONG_DEC)&!is.na(PRIM_LAT_DEC),]
 geo = geo[PRIM_LAT_DEC>16,]
 geo$PRIM_LONG_DEC[geo$PRIM_LONG_DEC>170] <- geo$PRIM_LONG_DEC[geo$PRIM_LONG_DEC>170] * -1
-project_centroids = geo[,list(mean(PRIM_LONG_DEC),mean(PRIM_LAT_DEC)),by = .(PROJECT_ID)]
+geo = geo[geo$PROJECT_ID %in% eis_ids,]
+project_centroids = geo[,list(mean(PRIM_LONG_DEC,na.rm = T),mean(PRIM_LAT_DEC,na.rm = T)),by = .(PROJECT_ID)]
+
+geo$AGENCY = projects$AGENCY_SHORT[match(geo$PROJECT_ID,projects$EIS.Number)]
+agency_centroids = geo[,list(mean(PRIM_LONG_DEC),mean(PRIM_LAT_DEC)),by = .(AGENCY)]
 setnames(project_centroids,'PROJECT_ID','EIS.Number')
 us_states  = tigris::states(class = 'sf',year = 2015)
 us_states = us_states[!us_states$STUSPS %in%  c('VI','MP','GU','AS'),]
@@ -168,6 +183,12 @@ gg_centroid = ggplot() +
   NULL
 gg_centroid
 
+estimate_loc = eis_ids[!eis_ids %in% project_centroids$EIS.Number]
+### add in agency-wide replacements for four missing locations ####
+project_centroids = rbind(project_centroids,
+data.table(EIS.Number= estimate_loc,
+           agency_centroids[match(projects$AGENCY_SHORT[match(estimate_loc,projects$EIS.Number)],agency_centroids$AGENCY),][,2:3])
+)
 project_dist = dist(as.matrix(project_centroids[order(EIS.Number),.(V1,V2)]),upper = T,diag = F)
 dist_mat = log(as.matrix(project_dist)+0.001)
 project_centroids$EIS.Number -> rownames(dist_mat) -> colnames(dist_mat)
@@ -208,16 +229,25 @@ ldt_long = melt(lit_dt,id.vars = 'recode',measure.vars = patterns('y[0-9]'))
 ldt_long$year <- as.numeric(str_remove(ldt_long$variable,'[a-z]'))
 ltd_total = ldt_long[year<2013,][,sum(value,na.rm = T),by=.(recode)]
 
+tots = projects[,.N,by=.(AGENCY_SHORT)]
+
+ltd_total$total_eis = tots$N[match(ltd_total$recode,tots$AGENCY_SHORT)]
+ltd_total$litigation_per_eis = ltd_total$V1/ltd_total$total_eis
 
 
 
+ideology_sheet = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSOSX--qpOSyBZcW3OWeWRmiC2-eC74un7fZYXFCzrW8FNB1FOQFMaIq-CW8hMIoBqtZMXYR05UA7Lu/pub?output=csv'
+ideol = fread(ideology_sheet)
+subs = str_split(ideol$epaStandIn,', ')
+projects$index = match(projects$Lead.Agency,ideol$epaName)
+projects = data.table(projects,ideol[unlist(sapply(projects$Lead.Agency,function(x) c(grep(x,ideol$epaName),grep(x,ideol$epaStandIn)))),])
 
+projects$skills_rating[is.na(projects$skills_rating)] <- 0
 
 library(lubridate)
 #if(runEISnet){ 
 #eis_p_list = pblapply(seq(2,20,2),function(p) {
-eis_p_list = lapply(seq(2,100,2),function(p){
-  print(p)
+
   # ######### EIS analysis #########
   s = 300
   tcounts = lda_eis[score>s & a_id!=b_id,.N,by = .(a_id,b_id)]
@@ -225,178 +255,180 @@ eis_p_list = lapply(seq(2,100,2),function(p){
   eis_net = network.initialize(n = length(eis_nodes),directed = F,bipartite = F,hyper = F,multiple = F,loops = F)
   network.vertex.names(eis_net) <- eis_nodes
   edgelist = tcounts
-  edgelist = edgelist[N>=p,]
+  edgelist = edgelist[N>=0,]
   network::add.edges.network(eis_net,tail = match(edgelist$a_id,network.vertex.names(eis_net)),
                              head = match(edgelist$b_id,network.vertex.names(eis_net)),names.eval = 'Score_Count',vals.eval = edgelist$N)
-  
-  in_epa = network.vertex.names(eis_net) %in% epa_record$EIS.Number
-  
-  network.vertex.names(eis_net)[!in_epa] <- projects$MASTER_ID[match(network.vertex.names(eis_net)[!in_epa],  projects$EIS.Number)]
-  
-  eis_net %v% 'Agency' <- as.character(epa_record$Agency[match(network.vertex.names(eis_net),epa_record$EIS.Number)])
-  eis_net %v% 'Agency_Short' <- as.character(epa_record$Agency_Short[match(network.vertex.names(eis_net),epa_record$EIS.Number)])
-  eis_net %v% 'Fed_Reg_Date' <- decimal_date(mdy(epa_record$Federal.Register.Date[match(network.vertex.names(eis_net),epa_record$EIS.Number)]))
+  eis_net %v% 'Agency' <- as.character(projects$AGENCY[match(network.vertex.names(eis_net),projects$EIS.Number)])
+  eis_net %v% 'Agency_Short' <- as.character(projects$AGENCY_SHORT[match(network.vertex.names(eis_net),projects$EIS.Number)])
+  eis_net %v% 'Fed_Reg_Date' <- decimal_date(mdy(projects$Federal.Register.Date[match(network.vertex.names(eis_net),projects$EIS.Number)]))
   eis_net %v% 'Year' <- (eis_net %v% 'Fed_Reg_Date')-2013
   eis_net %v% 'EIS' <- network.vertex.names(eis_net)
-  eis_net %v% 'ln_Pages_Hashed' <- log(page_counts$total_pages[match(eis_net%v%'vertex.names',page_counts$MASTER_ID)])
+  eis_net %v% 'ln_Pages_Hashed' <- log(page_counts$total_pages[match(eis_net%v%'vertex.names',page_counts$EIS.Number)])
+  eis_net %v% 'NEPA_litigation_per_FEIS_2001_2012' = ltd_total$litigation_per_eis[match(eis_net %v% 'Agency_Short', ltd_total$recode)]
   
-  eis_net %v% 'NEPA_litigation_per_FEIS_2001_2012' = lit_dt$litigation_per_feis[match(eis_net %v% 'Agency_Short', lit_dt$AGENCY_SHORT)]
-  set.vertex.attribute(eis_net,attrname='NEPA_litigation_per_FEIS_2001_2012',v = which(is.na(eis_net %v% 'NEPA_litigation_per_FEIS_2001_2012')),value = 0)
+  eis_net %v% 'Ideo_Rating' <- projects$ideo_rating[match(network.vertex.names(eis_net),projects$EIS.Number)]
+  eis_net %v% 'Skill_Rating' <- projects$skills_rating[match(network.vertex.names(eis_net),projects$EIS.Number)]
   # eis_net %v% 'sqrt_NEPA_litigation_2001_2012'  <- sqrt(eis_net %v% 'NEPA_litigation_2001_2012' )
   eis_net %v% 'Consultant' <- network.vertex.names(eis_net) %in% consults$EIS.Number
-  eis_distance_matrix = dist_mat[rownames(dist_mat) %in% {eis_net %v% 'vertex.names'},colnames(dist_mat) %in% {eis_net %v% 'vertex.names'}]
-  eis_net_sub = eis_net
-  eis_net_sub = delete.vertices(eis_net_sub,which(!{eis_net %v% 'vertex.names'} %in% rownames(eis_distance_matrix)))
+  eis_distance_matrix = abs(dist_mat[rownames(dist_mat) %in% {eis_net %v% 'vertex.names'},colnames(dist_mat) %in% {eis_net %v% 'vertex.names'}])
   
-  eis_dist_index = match(eis_net_sub %v% 'vertex.names',rownames(eis_distance_matrix))
-  eis_distance_matrix = eis_distance_matrix[eis_dist_index,eis_dist_index]
   
+  
+  readab = readRDS('boilerplate_project/data_products/readability_scores_by_project.rds')
+
+  eis_net %v% 'ln(Readability score)' <- (log(readab$re[match(eis_net %v% 'vertex.names',readab$EIS.Number)]))
+  
+  eis_net %v% 'Output' <- projects$DECISION[match(eis_net %v% 'vertex.names',projects$EIS.Number)]
+
   eis_consult_matrix = project_to_project_consult_matrix[rownames(project_to_project_consult_matrix) %in%  eis_ids,colnames(project_to_project_consult_matrix) %in%  eis_ids]
-  rownames(eis_consult_matrix) = colnames(eis_consult_matrix) = projects$MASTER_ID[match(rownames(eis_consult_matrix),projects$EIS.Number)]
-  
   eis_consult_index = match(eis_net %v% 'vertex.names',rownames(eis_consult_matrix))
   eis_consult_matrix = eis_consult_matrix[eis_consult_index,eis_consult_index]
-  eis_consult_sub_index = match(eis_net_sub %v% 'vertex.names',rownames(eis_consult_matrix))
-  eis_consult_sub_matrix = eis_consult_matrix[eis_consult_sub_index,eis_consult_sub_index]
+
   
   eis_author_matrix = project_to_project_author_matrix[rownames(project_to_project_author_matrix) %in% eis_ids,colnames(project_to_project_author_matrix) %in% eis_ids]
-  rownames(eis_author_matrix) = colnames(eis_author_matrix) = projects$MASTER_ID[match(rownames(eis_author_matrix),projects$EIS.Number)]
   eis_author_index = match(eis_net %v% 'vertex.names',rownames(eis_author_matrix))
   eis_author_matrix = eis_author_matrix[eis_author_index,eis_author_index]
-  eis_author_sub_index = match(eis_net_sub %v% 'vertex.names',rownames(eis_author_matrix))
-  eis_author_sub_matrix = eis_author_matrix[eis_author_sub_index,eis_author_sub_index]
+
+  eis_order = rank(eis_net %v% 'EIS')
   
+
+diag(eis_consult_matrix)<- NA
+diag(eis_author_matrix)<- NA
+diag(eis_distance_matrix)<- NA
+mean(eis_consult_matrix,na.rm = T)
+mean(eis_author_matrix,na.rm = T)
+mean(eis_distance_matrix,na.rm = T)
+
+
+eis_p_list = pblapply(seq(2,50,1),function(p){
+    print(p)
   # ##### fit eis_net lolog model ####
   # cl = makeCluster(mcores)
   #  registerDoParallel(cl)
-  eis_order = rank(eis_net %v% 'EIS')
   temp_eis_net = eis_net
-  if(p == 10){eis_master_net <<- eis_net}
-  # delete.edges(temp_eis_net,  which(get.edge.value(temp_eis_net,'Score_Count')<p))
-  #tapply(degree(temp_eis_net,gmode = 'graph'),temp_eis_net %v% 'Agency_Short',mean)
-  mod_temp_eis = lolog(temp_eis_net ~ edges + 
-                         nodeCov('ln_Pages_Hashed') + 
+  delete.edges(temp_eis_net,  which(get.edge.value(temp_eis_net,'Score_Count')<p))
+  if(p == 5){eis_master_net <<- temp_eis_net}
+  
+  mod_temp_eis = lolog(temp_eis_net ~ edges +       
+                         nodeCov('ln_Pages_Hashed') +
                          nodeMatch('Agency_Short') +
                          nodeFactor('Consultant')+
                          nodeCov('NEPA_litigation_per_FEIS_2001_2012') +
+                         nodeCov('Skill_Rating') + nodeCov('Ideo_Rating') + 
                          absDiff('Fed_Reg_Date') +
+                        nodeFactor('Output') +
+                         nodeCov('ln(Readability score)') +
                          edgeCov(eis_consult_matrix>0,name = 'Same_Consultant') +
-                         edgeCov(eis_author_matrix>0,name = 'Preparers')|eis_order,
-                       nsamp = samples,verbose=T, maxIter = iters,maxStepSize = stepsize)#,cluster = cl)
-  #saveRDS(mod_temp_eis,paste0('scratch/boilerplate/lolog_model_objects/eis_lolog_p',p,".RDS"))
-  # 
-  # 
-  temp_eis_net_sub = eis_net_sub
-  if(p == 10){eis_master_net_sub <<- eis_net_sub}
-  #delete.edges(temp_eis_net_sub,  which(get.edge.value(temp_eis_net_sub,'Score_Count')<p))
-  eis_sub_order = rank(temp_eis_net_sub %v% 'EIS')
-  mod_temp_eis_dist = lolog(temp_eis_net_sub ~ edges + 
-                              nodeCov('ln_Pages_Hashed') + 
-                              nodeMatch('Agency_Short') + 
-                              nodeFactor('Consultant')+
-                              nodeCov('NEPA_litigation_per_FEIS_2001_2012') +
-                              absDiff('Fed_Reg_Date') +
-                              edgeCov(eis_consult_sub_matrix>0,name = 'Same_Consultant')  + 
-                              edgeCov(eis_author_sub_matrix>0,name = 'Preparers') + 
-                              edgeCov(eis_distance_matrix,name = 'Distance')|eis_sub_order,
-                            nsamp = samples,verbose=T, maxIter = iters,maxStepSize = stepsize)#,cluster = cl)
-  #saveRDS(mod_temp_eis_dist,paste0('scratch/boilerplate/lolog_model_objects/eis_lolog_dist_p',p,".RDS"))
-  # 
-  # 
-  
-  mod_temp_eis_dist_interaction = lolog(temp_eis_net_sub ~ edges + 
-                                          nodeCov('ln_Pages_Hashed') + 
-                                          nodeMatch('Agency_Short') + 
-                                          nodeFactor('Consultant')+
-                                          nodeCov('NEPA_litigation_per_FEIS_2001_2012') +
-                                          absDiff('Fed_Reg_Date') +
-                                          edgeCov(eis_consult_sub_matrix>0,name = 'Same_Consultant')  + 
-                                          edgeCov(eis_author_sub_matrix>0,name = 'Preparers') + 
-                                          edgeCov(eis_distance_matrix,name = 'Distance') +
-                                          edgeCov(eis_distance_matrix * (eis_author_sub_matrix>0),name = 'DistanceXAuthor')|eis_sub_order,
-                                        nsamp = samples,verbose=T, maxIter = iters,maxStepSize = stepsize)#,cluster = cl)
-  # saveRDS(mod_temp_eis_dist_interaction ,paste0('scratch/boilerplate/lolog_model_objects/eis_lolog_dist_interaction_p',p,".RDS"))
-  
+                         edgeCov(eis_author_matrix>0,name = 'Preparers') +
+                         edgeCov(eis_distance_matrix,name = 'Distance')|eis_order,
+                       nsamp = samples,verbose=T, maxIter = iters,maxStepSize = stepsize)
   m1 = (summary(mod_temp_eis)[c('theta','se','pvalue')]) %>% data.frame() %>% mutate(coef = rownames(.),mod = 1)
-  m2 = (summary(mod_temp_eis_dist)[c('theta','se','pvalue')]) %>% data.frame() %>% mutate(coef = rownames(.),mod = 2)
-  m3 = (summary(mod_temp_eis_dist_interaction)[c('theta','se','pvalue')]) %>% data.frame() %>% mutate(coef = rownames(.),mod = 3)
-  eis_mresults = rbindlist(list(m1,m2,m3))
+
+  eis_mresults = m1
   eis_mresults$DV = 'EIS'
   
-  eis_mresults$coef = gsub('.*\\.','',eis_mresults$coef)
+  #eis_mresults$coef = gsub('.*\\.','',eis_mresults$coef)
   eis_mresults$coef = fct_inorder(eis_mresults$coef)
   eis_mresults$coef = fct_rev(eis_mresults$coef)
-  
-  eis_mresults$coef = fct_recode(eis_mresults$coef,'litigations per FEIS, 2001-2012' = 'NEPA_litigation_per_FEIS_2001_2012','Used consultants' = 'Consultant',
-                                 '|publication date diff.|' = 'Fed_Reg_Date','ln(pages)' = 'ln_Pages_Hashed','Same consultants' = 'Same_Consultant')
   eis_mresults$p = p
   eis_mresults
-})
+},cl = 2)
 
 
-eis_net_descriptives = data.table(size = network.size(eis_master_net),edgecount = network.edgecount(eis_master_net),density = network.density(eis_master_net))
-
-sapply(list.vertex.attributes(eis_master_net),function(x) summary(eis_master_net %v% x))
-
-
-313/(475+313)
-exp(6.313)
 
 eis_dt = rbindlist(eis_p_list)
+eis_dt$coef = fct_recode(eis_dt$coef,'litigations per FEIS, 2001-2012' = 'nodecov.NEPA_litigation_per_FEIS_2001_2012','Used consultants' = 'nodeFactor.Consultant.1',
+                               '|publication date diff.|' = 'absDiff.Fed_Reg_Date','ln(pages)' = 'nodecov.ln_Pages_Hashed','Same consultant(s)' = 'edgeCov.Same_Consultant',
+                         "Same preparer(s)" = "edgeCov.Preparers","Distance" = "edgeCov.Distance",'ln(readability)' = "nodecov.ln(Readability score)",
+                         'Same agency'='nodematch.Agency_Short', "Program/policy" = "nodeFactor.Output.1", "Project" = "nodeFactor.Output.2",
+                         'Ideol. rating' = 'nodecov.Ideo_Rating','Skill rating' = 'nodecov.Skill_Rating')
+
 eis_dt$coef <- fct_rev(eis_dt$coef)
-eis_dt$coef = fct_recode(eis_dt$coef, 'Same agency' = 'Agency_Short','Used consultant'='1')
 eis_dt[,sig:=ifelse(theta-1.96 * se < 0 & theta+1.96*se > 0,0,1)]
 
-gg_sensitivity = ggplot(eis_dt[coef!='edges'&mod!=3,][order(-coef)]) + 
+
+gg_sensitivity = ggplot(eis_dt[coef!='edges'&mod==1,][order(-coef)]) + 
   geom_errorbar(aes(x = p,ymin = theta-1.96 * se,ymax = theta+1.96*se)) + 
   geom_point(aes(x = p,y = theta,fill = as.factor(sig),size = as.factor(sig)),pch = 21,size = 0.5) + 
   facet_wrap(~coef,scales = 'fixed') + 
   scale_fill_manual(values = c('white','black'),name = '95% interval spans 0',labels=c('yes','no')) + 
   theme_bw() + geom_vline(aes(xintercept = 10,col = 'thresh'),lty = 2) + geom_hline(yintercept = 0,lty = 3) + 
-  theme(text = element_text(family = 'Times',size = 10),legend.position = c(0.85,0.15),
-        legend.box = "vertical") + 
+  theme(text = element_text(family = 'Times',size = 10),legend.position = c(0.7,0.1),
+        legend.box = "horizontal") + 
   scale_color_manual(labels = 'threshold for main models',name = '',values = 'black') + 
   scale_size_manual(values = c(0.5,1))+
   scale_x_continuous(name = '# pages where LDA > 300',breaks = c(0,10,25,50,75,100)) +
   scale_y_continuous(name = '95% confidence interval (additive log-odds')+
   ggtitle('Parameter estimates by threshold used to assign tie between projects')
 gg_sensitivity
-ggsave(gg_sensitivity,filename = 'output/boilerplate/figures/threshold_sensitivity.png',dpi = 300,width = 7,height =  6,units = 'in')
+ggsave(gg_sensitivity,filename = 'boilerplate_project/output/figures/threshold_sensitivity.png',dpi = 300,width = 7,height =  6,units = 'in')
 
 
 
-eis_dt$coef =  fct_rev(eis_dt$coef)
-eis_dt[,sig:=ifelse(theta - 1.96 * se <0 & theta + 1.96 * se>0,0,1)]
+p = 5
+temp_eis_net = eis_net
 
-eis_dt$mod_sig = paste0(eis_dt$mod,eis_dt$sig)
-eis_dt[coef!='edges'&p==10&mod!=3,]
+delete.edges(temp_eis_net,  which(get.edge.value(temp_eis_net,'Score_Count')<p))
+?lolog
+mod_temp_eis = lolog(temp_eis_net ~ edges +  twoPath + 
+                       nodeCov('ln_Pages_Hashed') +
+                       nodeMatch('Agency_Short') +
+                       nodeFactor('Consultant')+
+                       nodeCov('Skill_Rating') + nodeCov('Ideo_Rating') + 
+                       nodeCov('NEPA_litigation_per_FEIS_2001_2012') +
+                       absDiff('Fed_Reg_Date') +
+                       nodeFactor('Output')+
+                       nodeCov('ln(Readability score)') +
+                       edgeCov(eis_consult_matrix>0,name = 'Same_Consultant') +
+                       edgeCov(eis_author_matrix>0,name = 'Preparers') +
+                       edgeCov(eis_distance_matrix,name = 'Distance')|eis_order,
+                     nsamp = samples,verbose=T, maxIter = iters,maxStepSize = stepsize)
+  summary(mod_temp_eis)
+m1 = (summary(mod_temp_eis)[c('theta','se','pvalue')]) %>% data.frame() %>% mutate(coef = rownames(.),mod = 1)
+  
+  eis_mresults = m1
+  eis_mresults$DV = 'EIS'
+  eis_mresults$coef = fct_recode(eis_mresults$coef,'litigations per FEIS, 2001-2012' = 'nodecov.NEPA_litigation_per_FEIS_2001_2012','Used consultants' = 'nodeFactor.Consultant.1',
+                           '|publication date diff.|' = 'absDiff.Fed_Reg_Date','ln(pages)' = 'nodecov.ln_Pages_Hashed','Same consultant(s)' = 'edgeCov.Same_Consultant',
+                           "Same preparer(s)" = "edgeCov.Preparers","Distance" = "edgeCov.Distance",'ln(readability)' = "nodecov.ln(Readability score)",
+                           'Same agency'='nodematch.Agency_Short', "Program/Policy" = "nodeFactor.Output.1", "Project" = "nodeFactor.Output.2",
+                           'Ideol. rating' = 'nodecov.Ideo_Rating','Skill rating' = 'nodecov.Skill_Rating')
+  
+  eis_mresults$coef = fct_inorder(eis_mresults$coef)
+  eis_mresults$coef = fct_rev(eis_mresults$coef)
+eis_mresults <- data.table(eis_mresults)
+eis_mresults[,sig:=ifelse(theta - 1.96 * se <0 & theta + 1.96 * se>0,0,1)]
+eis_mresults$mod_sig = paste0(eis_mresults$mod,eis_mresults$sig)
 
-(eis_grob = ggplot(eis_dt[coef!='edges'&p==10&mod!=3,],aes(group = as.factor(mod))) + 
+
+(eis_grob = ggplot(eis_mresults[coef!='edges'&p==5&mod==1,],aes(group = as.factor(mod))) + 
     geom_hline(yintercept = 0,lty = 2,col = 'grey50') + 
     geom_errorbar(aes(ymin = theta - 1.96 * se,ymax = theta + 1.96 * se,x = coef,col = as.factor(mod)),
                   width = 0.2,lwd = .75,position = position_dodge(width = .3)) + 
     geom_point(aes(y = theta,x= coef,
                    col = as.factor(mod)),position = position_dodge2(width = .3),shape = 19,size = .75) + 
-    geom_point(data = eis_dt[coef!='edges'&p==10&mod!=3&sig==0,],fill = 'white',
-               aes(y = theta,x= coef,
-                   col = as.factor(mod)),position = position_dodge2(width = .3),shape = 21,size = .75) + 
+    # geom_point(data = eis_dt[coef!='edges'&p==5&mod==1&sig==0,],fill = 'white',
+    #            aes(y = theta,x= coef,
+    #                col = as.factor(mod)),position = position_dodge2(width = .3),shape = 21,size = .75) + 
     theme(axis.text.y = element_blank()) + ggtitle('Predicting high reuse between EISs') + 
-    scale_y_continuous(name = '95% CI (additive log-odds)') + 
+    ylab(expression(`less likely` %<-% `boilerplate` %->% `more likely`))+
     coord_flip() + theme_bw() +
-    scale_color_colorblind(name = 'model',labels = c('all EISs','w/ geolocation')) + 
+    scale_color_colorblind(name = 'model',labels = c('95% confidence interval')) + 
     scale_fill_manual(values = c(NA,'white',NA))+
-    theme(legend.position = c(0.8,0.25),axis.title.y = element_blank(),legend.background = element_rect(fill = NA),
-          text = element_text(size = 10,family = 'Times')) +
+    theme(legend.position = c(0.7,0.075),legend.text = element_text(size = 10),
+          axis.title.y = element_blank(),legend.background = element_rect(fill = NA),
+          text = element_text(size = 10,family = 'Times'),legend.title = element_blank(),axis.title.x = element_text(size = 10)) +
     guides(shape = FALSE,fill = F) + 
     NULL)
 
-ggsave(plot = eis_grob,filename = 'output/boilerplate/figures/eis_lolog.png',width = 5,height = 3.4,units = 'in',dpi = 300)
+
+ggsave(plot = eis_grob,filename = 'boilerplate_project/output/figures/eis_lolog.png',width = 5,height = 3.4,units = 'in',dpi = 300)
 
 #modlist = list(mod_temp_eis,mod_temp_eis_dist,mod_temp_eis_dist_interaction )
 
 
 
-coef_dt = eis_dt[p==10&mod!=3,]
+coef_dt = eis_dt[p==5&mod==1,]
 coef_dt[,CI:=paste0(sprintf("%.3f", round(theta,3)),' (',sprintf("%.3f", round(se,3)),')')]
 coef_dt$coef = fct_drop(coef_dt$coef,'DistanceXAuthor')
 coef_dtcoef = fct_inorder(coef_dt$coef)
@@ -406,418 +438,14 @@ coef_dt$CI  =  paste0(coef_dt$CI,coef_dt$stars)
 
 coef_cast =  dcast(coef_dt[,.(mod,coef,CI)],coef~mod)
 coef_cast = coef_cast[order(fct_rev(coef)),]
-outdir.tables = "output/boilerplate/tables/" 
+outdir.tables = "boilerplate_project/output/tables/" 
 tableout <-htmlTable(coef_cast)
-outdir.tables = "output/boilerplate/tables/" 
+outdir.tables = "boilerplate_project/output/tables/" 
 sink(paste0(outdir.tables,"eis_lolog_coefs.html"))
 print(tableout,type="html",useViewer=F)
 sink()
 
-if(runUSFSnet){
-  ######### USFS analysis #########
-  s = 300
-  p = 10
-  usfs_meta = fread('scratch/forest_service_project_detail.csv',na.strings = "")
-  tcounts = lda_usfs[score>s & a_id!=b_id,.N,by = .(a_id,b_id)]
-  usfs_nodes = sort(usfs_ids)
-  usfs_net = network.initialize(n = length(usfs_nodes),directed = F,bipartite = F,hyper = F,multiple = F,loops = F)
-  network.vertex.names(usfs_net) <- usfs_nodes
-  edgelist = tcounts
-  
-  ap = page_counts$total_pages[match(edgelist$a_id,page_counts$EIS.Number)]
-  bp = page_counts$total_pages[match(edgelist$b_id,page_counts$EIS.Number)]
-  edgelist = edgelist[N>=p|N==ap|N==bp,]
-  network::add.edges.network(usfs_net,tail = match(edgelist$a_id,network.vertex.names(usfs_net)),
-                             head = match(edgelist$b_id,network.vertex.names(usfs_net)),names.eval = 'Score_Count',vals.eval = edgelist$N)
-  network.density(usfs_net)
-  network.size(usfs_net) * {network.size(usfs_net)-1} / 2
-  
-  #delete.edges(usfs_net,  which(get.edge.value(usfs_net,'Score_Count')<p))
-  usfs_net %v% 'EA_Date' <- decimal_date(ymd(usfs_meta$`Decision Signed Date`[match(usfs_net %v% 'vertex.names',usfs_meta$Proj_Num)]))
-  usfs_net %v% 'EIS_Date' <- decimal_date(mdy(epa_record$Federal.Register.Date[match(usfs_net %v% 'vertex.names',epa_record$EIS.Number)]))
-  usfs_net %v% 'PROJECT_TYPE' <- ifelse({usfs_net %v% 'vertex.names'} %in% epa_record$EIS.Number,'EIS','EA')
-  usfs_net %v% 'Date' = ifelse({usfs_net %v% 'PROJECT_TYPE'}=='EIS',usfs_net %v% 'EIS_Date',usfs_net %v% 'EA_Date')
-  
-  usfs_net %v% 'ln_Pages_Hashed' <- log(page_counts$total_pages[match(usfs_net%v%'vertex.names',page_counts$EIS.Number)])
-  usfs_net %v% 'Year' <- floor(usfs_net %v% 'Date') - 2013  
-  usfs_net %v% 'EIS.Number' <- network.vertex.names(usfs_net)
-  usfs_net %v% 'Consultant' <- network.vertex.names(usfs_net) %in% consults$EIS.Number
-  usfs_distance_matrix = dist_mat[rownames(dist_mat) %in% {usfs_net %v% 'vertex.names'},colnames(dist_mat) %in% {usfs_net %v% 'vertex.names'}]
-  usfs_net_sub = usfs_net
-  usfs_net_sub = delete.vertices(usfs_net_sub,which(!{usfs_net %v% 'vertex.names'} %in% rownames(usfs_distance_matrix)))
-  usfs_dist_index = match(usfs_net_sub %v% 'vertex.names',rownames(usfs_distance_matrix))
-  usfs_distance_matrix = usfs_distance_matrix[usfs_dist_index,usfs_dist_index]
-  
-  usfs_consult_matrix = project_to_project_consult_matrix[rownames(project_to_project_consult_matrix) %in% {usfs_net %v% 'vertex.names'},colnames(project_to_project_consult_matrix) %in% {usfs_net %v% 'vertex.names'}]
-  usfs_consult_index = match(usfs_net %v% 'vertex.names',rownames(usfs_consult_matrix))
-  usfs_consult_matrix = usfs_consult_matrix[usfs_consult_index,usfs_consult_index]
-  usfs_consult_sub_index = match(usfs_net_sub %v% 'vertex.names',rownames(usfs_consult_matrix))
-  usfs_consult_sub_matrix = usfs_consult_matrix[usfs_consult_sub_index,usfs_consult_sub_index]
-  
-  usfs_author_matrix = project_to_project_author_matrix[rownames(project_to_project_author_matrix) %in% {usfs_net %v% 'vertex.names'},colnames(project_to_project_author_matrix) %in% {usfs_net %v% 'vertex.names'}]
-  usfs_author_index = match(usfs_net %v% 'vertex.names',rownames(usfs_author_matrix))
-  usfs_author_matrix = usfs_author_matrix[usfs_author_index,usfs_author_index]
-  usfs_author_sub_index = match(usfs_net_sub %v% 'vertex.names',rownames(usfs_author_matrix))
-  usfs_author_sub_matrix = usfs_author_matrix[usfs_author_sub_index,usfs_author_sub_index]
-  
-  ##### fit usfs_net lolog model ####
-  
-  # cl = makeCluster(mcores)
-  #  registerDoParallel(cl)
-  usfs_order = rank(usfs_net %v% 'Date')
-  
-  temp_usfs_net = usfs_net
-  require(statnet)
-  
-  tform = temp_usfs_net ~ edges +  
-    nodeFactor('PROJECT_TYPE') + 
-    nodeCov('ln_Pages_Hashed') + 
-    nodeFactor('Consultant') +
-    absDiff('Date') + 
-    edgeCov(usfs_consult_matrix>0,name = 'Same_Consultants')  + 
-    edgeCov(usfs_author_matrix>0,name = 'Preparers')|usfs_order
-  
-  mod_usfs_temp = lolog(tform,
-                        nsamp = samples,verbose=T, maxIter = iters,maxStepSize = stepsize)
-  # 
-  saveRDS(mod_usfs_temp,'scratch/boilerplate/lolog_model_objects/usfs_lolog_p10.RDS')
-  
-  temp_usfs_net_sub = usfs_net_sub
-  #delete.edges(temp_usfs_net_sub,  which(get.edge.value(temp_usfs_net_sub,'Score_Count')<p))
-  usfs_sub_order = rank(temp_usfs_net_sub %v% 'Date')
-  
-  tform = temp_usfs_net_sub ~ edges + 
-    nodeFactor('PROJECT_TYPE') +
-    nodeCov('ln_Pages_Hashed') + 
-    nodeFactor('Consultant') +
-    absDiff('Date') +
-    edgeCov(usfs_consult_sub_matrix>0,name = 'Same_Consultants')  +
-    edgeCov(usfs_author_sub_matrix>0,name = 'Preparers') +
-    edgeCov(usfs_distance_matrix,name = 'Distance')|usfs_sub_order
-  mod_usfs_temp_dist = lolog(tform,
-                             nsamp = samples,verbose=T, maxIter = iters,maxStepSize = stepsize)
-  saveRDS(mod_usfs_temp_dist,'scratch/boilerplate/lolog_model_objects/usfs_lolog_dist_p10.RDS')
-  # 
-  tform=temp_usfs_net_sub ~ edges +
-    nodeFactor('PROJECT_TYPE') +
-    nodeCov('ln_Pages_Hashed') + 
-    nodeFactor('Consultant') +
-    absDiff('Date') +
-    edgeCov(usfs_consult_sub_matrix>0,name = 'Same_Consultants')  +
-    edgeCov(usfs_author_sub_matrix>0,name = 'Preparers') +
-    edgeCov(usfs_distance_matrix,name = 'Distance') +
-    edgeCov(usfs_distance_matrix * (usfs_author_sub_matrix>0),name = 'DistanceXAuthor')|usfs_sub_order
-  mod_usfs_temp_dist_interaction = lolog(tform,
-                                         nsamp = samples,verbose=T, maxIter = iters,maxStepSize = stepsize)
-  saveRDS(mod_usfs_temp_dist_interaction,'scratch/boilerplate/lolog_model_objects/usfs_lolog_dist_interaction_p10.RDS')
-  # stopCluster(cl)
-  
-  m1 = (summary(mod_usfs_temp)[c('theta','se','pvalue')]) %>% data.frame() %>% mutate(coef = rownames(.),mod = 1)
-  m2 = (summary(mod_usfs_temp_dist)[c('theta','se','pvalue')]) %>% data.frame() %>% mutate(coef = rownames(.),mod = 2)
-  m3 = (summary(mod_usfs_temp_dist_interaction)[c('theta','se','pvalue')]) %>% data.frame() %>% mutate(coef = rownames(.),mod = 3)
-  usfs_mresults = rbindlist(list(m1,m2,m3))
-  usfs_mresults$DV = 'USFS'
-}
 
-usfs_net_descriptives = data.table(size = network.size(usfs_net),edgecount = network.edgecount(usfs_net),density = network.density(usfs_net))
-
-usfs_mresults$coef[grepl('PROJECT_TYPE',usfs_mresults$coef)] <- 'EIS'
-usfs_mresults$coef = gsub('.*\\.','',usfs_mresults$coef)
-usfs_mresults$coef = fct_inorder(usfs_mresults$coef)
-usfs_mresults$coef = fct_rev(usfs_mresults$coef)
-
-(usfs_grob = ggplot(usfs_mresults[coef!='edges',],aes(group = as.factor(mod))) + 
-    geom_hline(yintercept = 0,lty = 2,col = 'grey50') + 
-    geom_errorbar(aes(ymin = theta - 1.96 * se,ymax = theta + 1.96 * se,x = coef),width = 0.2,position = position_dodge(width = 0.25)) + 
-    geom_point(aes(y = theta,x= coef),position = position_dodge2(width = 0.25)) + 
-    theme(axis.text.y = element_blank()) + 
-    coord_flip() + theme_bw() + #scale_color_colorblind() + 
-    NULL)
-
-if(runBLMnet){
-  # 
-  # ######### BLM analysis #########
-  s = 300
-  p = 10
-  blm_meta = fread('scratch/blm_project_record.csv',na.strings = "")
-  blm_doc = fread('scratch/blm_document_record.csv',na.strings = "")
-  tcounts = lda_blm[score>s & a_id!=b_id,.N,by = .(a_id,b_id)]
-  blm_nodes = sort(blm_ids)
-  
-  blm_net = network.initialize(n = length(blm_nodes),directed = F,bipartite = F,hyper = F,multiple = F,loops = F)
-  network.vertex.names(blm_net) <- blm_nodes
-  edgelist = tcounts
-  ap = page_counts$total_pages[match(edgelist$a_id,page_counts$EIS.Number)]
-  bp = page_counts$total_pages[match(edgelist$b_id,page_counts$EIS.Number)]
-  edgelist = edgelist[N>=p|N==ap|N==bp,]
-  tail = match(edgelist$a_id,network.vertex.names(blm_net))
-  head = match(edgelist$b_id,network.vertex.names(blm_net))
-  network::add.edges.network(blm_net,tail = tail,head = head,names.eval = 'Score_Count',vals.eval = edgelist$N)
-  # delete.edges(blm_net,  which(get.edge.value(blm_net,'Score_Count')<p))
-  network.density(blm_net)
-  network.size(blm_net) * {network.size(blm_net)-1} / 2
-  blm_net %v% 'Date' <- decimal_date(mdy(blm_meta$`Decision Date`[match(blm_net %v% 'vertex.names',blm_meta$`NEPA #`)]))
-  blm_net %v% 'Year' <- as.numeric(str_extract({blm_net %v% 'vertex.names'},'20[0-9]{2}'))
-  blm_net %v% 'Date'  = ifelse(is.na(blm_net %v% 'Date'), blm_net %v% 'Year',blm_net%v% 'Date')
-  blm_net %v% 'Year' <- floor(blm_net %v% 'Date') - 2013  
-  blm_net %v% 'ln_Pages_Hashed' <- log(page_counts$total_pages[match(blm_net%v%'vertex.names',page_counts$EIS.Number)])
-  blm_net %v% 'EIS.Number' <- network.vertex.names(blm_net)
-  blm_net %v% 'PROJECT_TYPE' <- ifelse(grepl('^[0-9]{8}',blm_net %v% 'vertex.names'),'EIS','EA')
-  blm_net %v% 'Consultant' <- network.vertex.names(blm_net) %in% consults$EIS.Number
-  blm_distance_matrix = dist_mat[rownames(dist_mat) %in% {blm_net %v% 'vertex.names'},colnames(dist_mat) %in% {blm_net %v% 'vertex.names'}]
-  blm_net_sub = blm_net
-  blm_net_sub = delete.vertices(blm_net_sub,which(!{blm_net %v% 'vertex.names'} %in% rownames(blm_distance_matrix)))
-  blm_dist_index = match(blm_net_sub %v% 'vertex.names',rownames(blm_distance_matrix))
-  blm_distance_matrix = blm_distance_matrix[blm_dist_index,blm_dist_index]
-  
-  blm_consult_matrix = project_to_project_consult_matrix[rownames(project_to_project_consult_matrix) %in% {blm_net %v% 'vertex.names'},colnames(project_to_project_consult_matrix) %in% {blm_net %v% 'vertex.names'}]
-  blm_consult_index = match(blm_net %v% 'vertex.names',rownames(blm_consult_matrix))
-  blm_consult_matrix = blm_consult_matrix[blm_consult_index,blm_consult_index]
-  blm_consult_sub_index = match(blm_net_sub %v% 'vertex.names',rownames(blm_consult_matrix))
-  blm_consult_sub_matrix = blm_consult_matrix[blm_consult_sub_index,blm_consult_sub_index]
-  # 
-  blm_author_matrix = project_to_project_author_matrix[rownames(project_to_project_author_matrix) %in% {blm_net %v% 'vertex.names'},colnames(project_to_project_author_matrix) %in% {blm_net %v% 'vertex.names'}]
-  blm_author_index = match(blm_net %v% 'vertex.names',rownames(blm_author_matrix))
-  blm_author_matrix = blm_author_matrix[blm_author_index,blm_author_index]
-  blm_author_sub_index = match(blm_net_sub %v% 'vertex.names',rownames(blm_author_matrix))
-  blm_author_sub_matrix = blm_author_matrix[blm_author_sub_index,blm_author_sub_index]
-  # 
-  
-  # ##### fit blm_net lolog model ####
-  # 
-  # cl = makeCluster(mcores)
-  #registerDoParallel(cl)
-  blm_order = rank(blm_net %v% 'Date')
-  
-  temp_net_blm = blm_net
-  mod_temp_blm = lolog(temp_net_blm ~ edges + 
-                         nodeFactor('PROJECT_TYPE') + 
-                         nodeCov('ln_Pages_Hashed') + 
-                         nodeFactor('Consultant')+
-                         absDiff('Date') + 
-                         edgeCov(blm_consult_matrix>0,name = 'Same_Consultants')  + edgeCov(blm_author_matrix>0,name = 'Preparers')|blm_order,
-                       nsamp = samples,verbose=T, maxIter = iters,maxStepSize = stepsize)
-  # 
-  saveRDS(mod_temp_blm,'scratch/boilerplate/lolog_model_objects/blm_lolog_p10.RDS')
-  
-  temp_net_blm_sub = blm_net_sub
-  #delete.edges(temp_net_blm_sub,  which(get.edge.value(temp_net_blm_sub,'Score_Count')<p))
-  blm_sub_order = rank(temp_net_blm_sub %v% 'Date')
-  mod_temp_blm_dist = lolog(temp_net_blm_sub ~ edges + 
-                              nodeFactor('PROJECT_TYPE') + 
-                              nodeCov('ln_Pages_Hashed') + 
-                              nodeFactor('Consultant')+
-                              absDiff('Date') + 
-                              edgeCov(blm_consult_sub_matrix>0,name = 'Same_Consultants')  + edgeCov(blm_author_sub_matrix>0,name = 'Preparers') + edgeCov(blm_distance_matrix,name = 'Distance')|blm_sub_order,
-                            nsamp = samples,verbose=T, maxIter = iters,maxStepSize = stepsize,cluster = cl)
-  saveRDS(mod_temp_blm_dist,'scratch/boilerplate/lolog_model_objects/blm_lolog_dist_p10.RDS')
-  
-  mod_temp_blm_dist_interaction = lolog(temp_net_blm_sub ~ edges + 
-                                          nodeFactor('PROJECT_TYPE') + 
-                                          nodeCov('ln_Pages_Hashed') + 
-                                          nodeFactor('Consultant')+
-                                          absDiff('Date') + 
-                                          edgeCov(blm_consult_sub_matrix>0,name = 'Same_Consultants')  + 
-                                          edgeCov(blm_author_sub_matrix>0,name = 'Preparers') + 
-                                          edgeCov(blm_distance_matrix,name = 'Distance') +
-                                          edgeCov(blm_distance_matrix * (blm_author_sub_matrix>0),name = 'DistanceXAuthor')|blm_sub_order,
-                                        nsamp = samples,verbose=T, maxIter = iters,maxStepSize = stepsize)
-  saveRDS(mod_temp_blm_dist_interaction,'scratch/boilerplate/lolog_model_objects/blm_lolog_dist_interaction_p10.RDS')
-  
-  # # 
-  
-  m1 = (summary(mod_temp_blm)[c('theta','se','pvalue')]) %>% data.frame() %>% mutate(coef = rownames(.),mod = 1)
-  m2 = (summary(mod_temp_blm_dist)[c('theta','se','pvalue')]) %>% data.frame() %>% mutate(coef = rownames(.),mod = 2)
-  m3 = (summary(mod_temp_blm_dist_interaction)[c('theta','se','pvalue')]) %>% data.frame() %>% mutate(coef = rownames(.),mod = 3)
-  blm_mresults = rbindlist(list(m1,m2,m3))
-  blm_mresults$DV = 'BLM'
-  
-}
-
-blm_mresults$coef[grepl('PROJECT_TYPE',blm_mresults$coef)] <- 'EIS'
-blm_mresults$coef = gsub('.*\\.','',blm_mresults$coef)
-blm_mresults$coef = fct_inorder(blm_mresults$coef)
-blm_mresults$coef = fct_rev(blm_mresults$coef)
-
-(blm_grob = ggplot(blm_mresults[coef!='edges',],aes(group = as.factor(mod))) + 
-    geom_hline(yintercept = 0,lty = 2,col = 'grey50') + 
-    geom_errorbar(aes(ymin = theta - 1.96 * se,ymax = theta + 1.96 * se,x = coef),width = 0.2,position = position_dodge(width = 0.25)) + 
-    geom_point(aes(y = theta,x= coef),position = position_dodge2(width = 0.25)) + 
-    theme(axis.text.y = element_blank()) + 
-    coord_flip() + theme_bw() + #scale_color_colorblind() + 
-    NULL)
-
-
-if(runDOEnet){
-  # ######### DOE analysis #########
-  s = 300
-  p = 3
-  tcounts = lda_doe[score>s & a_id!=b_id,.N,by = .(a_id,b_id)]
-  doe_meta = readRDS('scratch/doe_nepa_record.RDS')
-  library(spacyr)
-  
-  doe_meta = readRDS('scratch/doe_nepa_document_record.RDS')
-  doe_nodes = sort(doe_ids)
-  doe_net = network.initialize(n = length(doe_nodes),directed = F,bipartite = F,hyper = F,multiple = F,loops = F)
-  network.vertex.names(doe_net) <- doe_nodes
-  edgelist = tcounts
-  ap = page_counts$total_pages[match(edgelist$a_id,page_counts$EIS.Number)]
-  bp = page_counts$total_pages[match(edgelist$b_id,page_counts$EIS.Number)]
-  edgelist = edgelist[N>=p|N==ap|N==bp,]
-  
-  network::add.edges.network(doe_net,tail = match(edgelist$a_id,network.vertex.names(doe_net)),
-                             head = match(edgelist$b_id,network.vertex.names(doe_net)),names.eval = 'Score_Count',vals.eval = edgelist$N)
-  network.density(doe_net)
-  
-  network.size(doe_net) * {network.size(doe_net)-1} / 2
-  
-  doe_pdf_dates = fread('scratch/pdf_created_date.csv')
-  doe_pdf_dates$EIS.Number = str_remove(doe_pdf_dates$File,'--.*')
-  doe_pdf_dates = doe_pdf_dates[ymd_hms(Created_Date)<ymd('2025-01-01'),]
-  created_date = doe_pdf_dates[,max(ymd_hms(Created_Date),na.rm=T),by=.(EIS.Number)]
-  doe_net %v% 'Date' <- decimal_date(mdy(epa_record$Federal.Register.Date[match(network.vertex.names(doe_net),epa_record$EIS.Number)]))
-  rid = which(is.na(doe_net %v% 'Date'))
-  new_dates =  decimal_date(ymd_hms(created_date$V1[match(network.vertex.names(doe_net)[rid],created_date$EIS.Number)]))
-  set.vertex.attribute(doe_net,'Date',value = new_dates,v = rid)
-  
-  doe_net %v% 'Year' <- (doe_net %v% 'Date')-2013
-  doe_net %v% 'ln_Pages_Hashed' <- log(page_counts$total_pages[match(doe_net%v%'vertex.names',page_counts$EIS.Number)])
-  doe_net %v% 'doe' <- network.vertex.names(doe_net)
-  doe_net %v% 'PROJECT_TYPE' <- ifelse(grepl('^[0-9]{8}',doe_net %v% 'vertex.names'),'EIS','EA')
-  doe_net %v% 'Consultant' <- network.vertex.names(doe_net) %in% consults$EIS.Number
-  doe_distance_matrix = dist_mat[rownames(dist_mat) %in% {doe_net %v% 'vertex.names'},colnames(dist_mat) %in% {doe_net %v% 'vertex.names'}]
-  doe_net_sub = doe_net
-  doe_net_sub = delete.vertices(doe_net_sub,which(!{doe_net %v% 'vertex.names'} %in% rownames(doe_distance_matrix)))
-  
-  doe_dist_index = match(doe_net_sub %v% 'vertex.names',rownames(doe_distance_matrix))
-  doe_distance_matrix = doe_distance_matrix[doe_dist_index,doe_dist_index]
-  
-  doe_consult_matrix = project_to_project_consult_matrix[rownames(project_to_project_consult_matrix) %in% {doe_net %v% 'vertex.names'},colnames(project_to_project_consult_matrix) %in% {doe_net %v% 'vertex.names'}]
-  doe_consult_index = match(doe_net %v% 'vertex.names',rownames(doe_consult_matrix))
-  doe_consult_matrix = doe_consult_matrix[doe_consult_index,doe_consult_index]
-  doe_consult_sub_index = match(doe_net_sub %v% 'vertex.names',rownames(doe_consult_matrix))
-  doe_consult_sub_matrix = doe_consult_matrix[doe_consult_sub_index,doe_consult_sub_index]
-  
-  doe_author_matrix = project_to_project_author_matrix[rownames(project_to_project_author_matrix) %in% {doe_net %v% 'vertex.names'},colnames(project_to_project_author_matrix) %in% {doe_net %v% 'vertex.names'}]
-  doe_author_index = match(doe_net %v% 'vertex.names',rownames(doe_author_matrix))
-  doe_author_matrix = doe_author_matrix[doe_author_index,doe_author_index]
-  doe_author_sub_index = match(doe_net_sub %v% 'vertex.names',rownames(doe_author_matrix))
-  doe_author_sub_matrix = doe_author_matrix[doe_author_sub_index,doe_author_sub_index]
-  
-  # # ##### fit doe_net lolog model ####
-  
-  doe_order = rank(doe_net %v% 'Date')
-  doe_order= seq_along(doe_net %v% 'vertex.names')
-  temp_net_doe = doe_net
-  
-  #delete.edges(temp_net_doe,  which(get.edge.value(temp_net_doe,'Score_Count')<p))
-  mod_temp_doe = lolog(temp_net_doe~ edges +  
-                         nodeFactor('PROJECT_TYPE')+
-                         nodeFactor('Consultant') +
-                         nodeCov('ln_Pages_Hashed') + 
-                         absDiff('Date') + 
-                         edgeCov(doe_consult_matrix>0,name = 'Same_Consultants')  + 
-                         edgeCov(doe_author_matrix>0,name = 'Preparers')|doe_order,
-                       nsamp = samples,verbose=T, maxIter = iters,maxStepSize = stepsize)
-  
-  saveRDS(mod_temp_doe,'scratch/boilerplate/lolog_model_objects/doe_lolog_p10.RDS')
-  
-  temp_net_doe_sub = doe_net_sub
-  delete.edges(temp_net_doe_sub,  which(get.edge.value(temp_net_doe_sub,'Score_Count')<p))
-  doe_sub_order = rank(temp_net_doe_sub %v% 'Date')
-  mod_temp_doe_dist = lolog(temp_net_doe_sub ~ edges +  
-                              nodeFactor('PROJECT_TYPE') + 
-                              nodeFactor('Consultant') +
-                              nodeCov('ln_Pages_Hashed') + 
-                              absDiff('Date') + 
-                              edgeCov(doe_consult_sub_matrix>0,name = 'Same_Consultants')  + 
-                              edgeCov(doe_author_sub_matrix>0,name = 'Preparers') + edgeCov(doe_distance_matrix,name = 'Distance')|doe_sub_order,
-                            nsamp = samples,verbose=T, maxIter = iters,maxStepSize = stepsize)
-  
-  saveRDS(mod_temp_doe_dist,'scratch/boilerplate/lolog_model_objects/doe_lolog_dist_p10.RDS')
-  
-  mod_temp_doe_dist_interaction = lolog(temp_net_doe_sub ~ edges +  
-                                          nodeFactor('PROJECT_TYPE') + 
-                                          nodeFactor('Consultant') +
-                                          nodeCov('ln_Pages_Hashed') + 
-                                          absDiff('Date') + 
-                                          edgeCov(doe_consult_sub_matrix>0,name = 'Same_Consultants')  + 
-                                          edgeCov(doe_author_sub_matrix>0,name = 'Preparers') + 
-                                          edgeCov(doe_distance_matrix,name = 'Distance') +
-                                          edgeCov(doe_distance_matrix * (doe_author_sub_matrix>0),name = 'DistanceXAuthor')|doe_sub_order,
-                                        nsamp = samples,verbose=T, maxIter = iters,maxStepSize = stepsize)
-  
-  saveRDS(mod_temp_doe_dist_interaction,'scratch/boilerplate/lolog_model_objects/doe_lolog_dist_interaction_p10.RDS')
-  
-  
-  m1 = (summary(mod_temp_doe)[c('theta','se','pvalue')]) %>% data.frame() %>% mutate(coef = rownames(.),mod = 1)
-  m2 = (summary(mod_temp_doe_dist)[c('theta','se','pvalue')]) %>% data.frame() %>% mutate(coef = rownames(.),mod = 2)
-  m3 = (summary(mod_temp_doe_dist_interaction)[c('theta','se','pvalue')]) %>% data.frame() %>% mutate(coef = rownames(.),mod = 3)
-  doe_mresults = rbindlist(list(m1,m2,m3))
-  doe_mresults$DV = 'DOE'
-}
-
-
-doe_mresults$coef[grepl('PROJECT_TYPE',doe_mresults$coef)] <- 'EIS'
-doe_mresults$coef = gsub('.*\\.','',doe_mresults$coef)
-doe_mresults$coef = fct_inorder(doe_mresults$coef)
-doe_mresults$coef = fct_rev(doe_mresults$coef)
-
-(doe_grob = ggplot(doe_mresults[coef!='edges',],aes(group = as.factor(mod))) + 
-    geom_hline(yintercept = 0,lty = 2,col = 'grey50') + 
-    geom_errorbar(aes(ymin = theta - 1.96 * se,ymax = theta + 1.96 * se,x = coef),width = 0.2,position = position_dodge(width = 0.25)) + 
-    geom_point(aes(y = theta,x= coef),position = position_dodge2(width = 0.25)) + 
-    theme(axis.text.y = element_blank()) + 
-    coord_flip() + theme_bw() + #scale_color_colorblind() + 
-    NULL)
-
-
-modcoefs = rbindlist(list(
-  #eis_mresults,
-  blm_mresults,
-  usfs_mresults,
-  doe_mresults))
-
-
-modcoefs[,sig:=ifelse(theta + 1.96 * se>0&theta - 1.96 * se < 0,0,1),]
-modcoefs$coef = fct_recode(modcoefs$coef,'ln(pages)' = 'ln_Pages_Hashed',
-                           'Same consultants' = 'Same_Consultants',
-                           'Used consultants' = '1',
-                           '|publication date diff.|' = 'Date')
-
-(gg_lolog_ea = ggplot(modcoefs[coef!='edges'&mod!=3,],aes(group = as.factor(mod))) + 
-    facet_wrap(~DV,ncol = 3) + 
-    geom_hline(yintercept = 0,lty = 2,col = 'grey50') + 
-    geom_errorbar(aes(ymin = theta - 1.96 * se,ymax = theta + 1.96 * se,x = coef,
-                      col = as.factor(mod)),width = 0.2,position = position_dodge(width = 0.5)) + 
-    geom_point(aes(y = theta,x= coef,col = as.factor(mod),),position = position_dodge2(width = 0.5),pch = 19) + 
-    geom_point(aes(y = theta,x= coef,col = as.factor(mod),fill = as.factor(sig)),position = position_dodge2(width = 0.5),pch = 21) + 
-    ggtitle('Predicting text reuse between EA, EIS documents') + 
-    scale_color_colorblind(name = 'model',labels = c('all projects','w/ geolocation','author x geo')) + 
-    scale_fill_manual(values = c('white',NA)) + 
-    coord_flip() + theme_bw() + #scale_color_colorblind() + 
-    scale_y_continuous(name = '95% CI (additive log-odds)') +
-    theme(axis.title.y = element_blank(),legend.position = c(0.9,0.15),legend.background = element_rect(fill = NA),
-          text = element_text(size = 10),legend.title = element_blank()) + 
-    guides(fill = F) + 
-    NULL)
-gg_lolog_ea
-ggsave(gg_lolog_ea,filename = 'output/boilerplate/figures/lolog_eis_ea.png',dpi = 300,units = 'in',width = 7,height = 4)
-
-
-modcoefs[,CI:=paste0(sprintf("%.3f", round(theta,3)),' (',sprintf("%.3f", round(se,3)),')')]
-modcoefscoef = fct_inorder(modcoefs$coef)
-modcoefs$stars = ifelse(modcoefs$pvalue <0.001,"***",ifelse(modcoefs$pvalue<0.01,"**",ifelse(modcoefs$pvalue<0.05,"*",'')))
-modcoefs$CI  =  paste0(modcoefs$CI,modcoefs$stars)
-modcoefs = modcoefs[mod!=3,]
-
-coef_cast =  dcast(modcoefs[,.(mod,coef,CI,DV)],coef~DV + mod,value.var = 'CI')
-coef_cast = coef_cast[order(fct_rev(coef)),]
-coeftab = htmlTable(coef_cast)
-outdir.tables = "output/boilerplate/tables/" 
-sink(paste0(outdir.tables,"agency_comparison_lolog_coefs.html"))
-print(coeftab,type="html",useViewer=FALSE)
-sink()
 
 
 
@@ -845,138 +473,6 @@ pdata = pdata[as.numeric(a_id)<=as.numeric(b_id),]
           axis.text.y = element_text(colour = ifelse(sort(unique(pdata$a_id)) %in% blm_sagegrouse,'red','black')),
           legend.position = c(0.8,0.3)) )
 
-ggsave(gg_sagegrouse,units = 'in',width = 6,height = 6,dpi = 600,filename = 'output/boilerplate/figures/sagegrouse_blm.png')
-
-
-blm_eas = projects[AGENCY == 'Bureau of Land Management' & PROJECT_TYPE == 'EA',]
-blmproj = fread('scratch/blm_project_record.csv')
-blm_eas$PROGRAM = blmproj$`Program(s)`[match(blm_eas$EIS.Number,blmproj$`NEPA #`)]
-blm_eas$REGION = str_extract(blmproj$`Office(s)`[match(blm_eas$EIS.Number,blmproj$`NEPA #`)],'^[A-Z]+')
-blm_eas$REGION[blm_eas$REGION=='NM']<-c('NM/TX/OK/KS')
-blm_eas$REGION[blm_eas$REGION=='ORWA']<-c('OR/WA')
-blm_eas$REGION[blm_eas$REGION=='MT']<-c('MT/ND/SD')
-blm_eas$total_pages = page_counts$total_pages[match(blm_eas$EIS.Number,page_counts$EIS.Number)]
-
-blm_ea_lda = lda[a_id %in% blm_eas$EIS.Number & b_id %in% blm_eas$EIS.Number,]
-blm_ea_lda_solo = rbind(blm_ea_lda[,.(a_id,score,a)],blm_ea_lda[,.(b_id,score,b)],use.names = F)
-blm_ea_lda_solo = blm_ea_lda_solo[!duplicated(a),]
-
-blm_ea_over_300 = blm_ea_lda_solo[score>300,.N,by = .(a_id)]
-setnames(blm_ea_over_300,c('a_id','N'),c('EIS.Number','page300'))
-
-blm_eas = data.table(left_join(blm_eas,blm_ea_over_300))
-blm_eas$page300[is.na(blm_eas$page300)] <- 0
-blm_eas$PROGRAM = gsub('\\s{2,}',' ',gsub('\\n','',blm_eas$PROGRAM))
-blm_eas = blm_eas[!is.na(total_pages),]
-
-blm_eas$PROGRAM[blm_eas$PROGRAM %in% c('Interpretation and Environmental Education','Hazard Management and Resource Restoration',
-                                       'Conservation & Preservation Areas','Facilities Management','Paleontology','Law Enforcement','Cave and Karst Resources',
-                                       'Emergency Stabilization and Rehabilitation','Riparian-Wetlands','Soil Water and Air Quality',
-                                       'Cultural-Historical-Native American Resources')] <- 'Other'
-blm_eas$PROGRAM[grepl('Fluid Minerals',blm_eas$PROGRAM)] <- 'Fluid Minerals'
-blm_eas$PROGRAM[grepl('Grazing',blm_eas$PROGRAM)] <- 'Grazing'
-blm_eas$PROGRAM[grepl('Recreation',blm_eas$PROGRAM)] <- 'Recreation'
-blm_eas$PROGRAM[grepl('Horse',blm_eas$PROGRAM)] <- 'Wild Horse/Burro'
-blm_eas$PROGRAM[grepl('Forest',blm_eas$PROGRAM)] <- 'Forestry'
-blm_eas$PROGRAM[grepl('Rangeland',blm_eas$PROGRAM)] <- 'Rangeland'
-blm_eas$PROGRAM[grepl('Renew',blm_eas$PROGRAM)] <- 'Renewables'
-blm_eas$PROGRAM[grepl('Fire',blm_eas$PROGRAM)] <- 'Wildfire'
-blm_eas$PROGRAM[grepl('Emergency Stabilization',blm_eas$PROGRAM)] <- 'Emerg. Stabilization/Rehab.'
-blm_eas$PROGRAM <- fct_infreq(blm_eas$PROGRAM)
-
-# ggplot(data = blm_eas,aes(x = PROGRAM,y = page300/total_pages)) + 
-#   coord_flip() + geom_jitter(pch = 21,alpha = 0.4) + geom_boxplot(fill = NA,col = 'red',outlier.shape = '') + 
-#   theme_bw() + ggtitle('Text reuse in BLM EAs by program') + 
-#   scale_y_continuous(name = 'LDA > 300 / total pages') + 
-#   theme(text = element_text(size = 12),axis.title.y = element_blank())
-
-
-# 
-# # Plot
-# ggplot(blm_eas, aes(x = page300/total_pages, y = REGION, fill = ..x..)) +
-#   geom_density_ridges_gradient(scale = 3, rel_min_height = 0.01) +
-#   scale_fill_viridis(name = "Temp. [F]", option = "C") +
-#   scale_x_continuous(limits=c(0,1),name = '# pages w/ LDA > 300 / total pages') + 
-#   labs(title = 'EA text reuse by BLM region') +
-#   theme_ipsum() +
-#   theme(
-#     legend.position="none",
-#     panel.spacing = unit(0.1, "lines"),
-#     strip.text.x = element_text(size = 8))
-
-# library
-
-library(treemapify)
-
-g1 = ggplot(blm_eas) + geom_bar(aes(x = REGION)) + theme_bw() +
-  ggtitle('# of EAs by region') + coord_flip() + scale_y_continuous(name = '# EAs, 2013-2019')+
-  theme(text = element_text(size = 12)) + scale_x_discrete(name = 'Administrative region')
-g2 = ggplot(blm_eas) + geom_boxplot(aes(y = page300/total_pages,x=REGION)) + theme_bw() +
-  ggtitle('Text reuse between EAs by region') + coord_flip() + scale_x_discrete(name ='') + 
-  scale_y_continuous('LDA > 300 / total pages') + theme(text = element_text(size = 10))
-ggsave(plot = grid.arrange(g1,g2,ncol = 2),filename = 'output/boilerplate/figures/blm_ea_by_region.png',
-       dpi = 300,units = 'in',width = 7,height = 3)
-
-
-g1 = ggplot(blm_eas) + geom_bar(aes(x = PROGRAM)) + theme_bw() +
-  ggtitle('# of EAs by program') + coord_flip() + scale_y_continuous(name = '# EAs, 2013-2019')+
-  theme(text = element_text(size = 12)) + scale_x_discrete(name = 'BLM program')
-g2 = ggplot(blm_eas) + geom_boxplot(aes(y = page300/total_pages,x=PROGRAM)) + theme_bw() +
-  ggtitle('Text reuse between EAs by program') + coord_flip() + scale_x_discrete(name ='') + 
-  scale_y_continuous('LDA > 300 / total pages') + theme(text = element_text(size = 10))
-ggsave(plot = grid.arrange(g1,g2,ncol = 2),filename = 'output/boilerplate/figures/blm_ea_by_program.png',
-       dpi = 300,units = 'in',width = 7,height = 3)
-
-
-#tree_data = blm_eas[,sum(page300),by = .(REGION,PROGRAM)]
-
-tree_data = blm_eas[,list(sum(page300),sum(total_pages)),by = .(PROGRAM)]
-setnames(tree_data,c('V1','V2'),c('page300','totalpages'))
-tree_data[,lowreusepages:=totalpages-page300]
-test = melt(tree_data[,.(PROGRAM,page300,lowreusepages)])
-library(treemapify)
-test = test[order(value),]
-test$PROGRAM = fct_reorder(test$PROGRAM,test$value)
-(gg_blm_ea_reuse = ggplot(test, aes(x = PROGRAM,y = value,fill = variable)) + 
-    geom_bar(stat = 'identity') + 
-    scale_fill_tableau(direction = -1,name = 'between-project',labels=c('# pages LDA>=300','# pages LDA<300')) + 
-    coord_flip() + theme_bw() + 
-    theme(legend.position = c(0.6,0.2))+
-    scale_y_continuous(name = 'Total pages observed') + 
-    xlab('Program area')+
-    #scale_x_continuous(name = 'Program area') + 
-    ggtitle('Total pages of EA text by BLM program 2013-2019'))
-
-ggsave(plot = gg_blm_ea_reuse,filename = 'output/boilerplate/figures/blm_between_ea_barplot.png',
-       units = 'in',dpi = 300, width = 7,height = 5)
-
-
-
-gg_blm_treemap = ggplot(test, aes(area = value,label = PROGRAM, subgroup = PROGRAM,fill = variable)) +
-  ggtitle('Total pages of EA text by BLM program 2013-2019') + 
-  geom_treemap()+
-  #geom_treemap_subgroup3_border(colour = "blue", size = 1) +
-  #geom_treemap_subgroup10_border(colour = "white", size = 3) +
-  geom_treemap_subgroup_border(colour = "black", size = 3) +
-  geom_treemap_subgroup_text(min.size = 4,
-                             place = "topleft",
-                             colour = "black",
-                             alpha = 1,reflow = T,grow = F) +
-  scale_fill_tableau(direction = -1,name = 'between-project',labels=c('# pages LDA>=300','# pages LDA<300')) + 
-  theme(legend.position = 'bottom',legend.direction = 'horizontal')
-
-ggsave(plot = gg_blm_treemap,filename = 'output/boilerplate/figures/blm_between_ea_treemap.png',
-       units = 'in',dpi = 300, width = 7,height = 5)
-
-net_list = list(eis_master_net,eis_master_net_sub,usfs_net,usfs_net_sub,blm_net,blm_net_sub,doe_net,doe_net_sub)
-names(net_list) <- c('eis','eis_dist','usfs','usfs_dist','blm','blm_dist','doe','doe_dist')
-ntdt = data.table(nodes = sapply(net_list,network.size),edges = sapply(net_list,network.edgecount),
-                  density = sapply(net_list,network.density),net = names(net_list))
-
-tableout <-htmlTable(ntdt)
-outdir.tables = "output/boilerplate/tables/" 
-sink(paste0(outdir.tables,"network_summary.html"))
-print(tableout,type="html",useViewer=F)
-sink()
+ggsave(gg_sagegrouse,units = 'in',width = 6,height = 6,dpi = 600,filename = 'boilerplate_project/output/figures/sagegrouse_blm.png')
 
 
