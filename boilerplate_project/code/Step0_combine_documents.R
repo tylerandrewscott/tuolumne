@@ -78,6 +78,14 @@ epa_docs = epa_docs[!is.na(File_Name),]
 epa_docs = epa_docs[grepl("pdf$",File_Name),]
 epa_docs = epa_docs[!duplicated(epa_docs)]
 
+
+###agencies posted duplicates ####
+epa_docs = epa_docs[!File_Name %in% c('20130252_HSTT_EIS_Appendices_A-G_VOL_III_08-13.pdf',
+  '20130252_HSTT_EIS_Exec_Sum-CH_3.4_VOL_I_08-13.pdf',
+ '20130252_HSTT_EIS_CH_3.5-7_VOL_II_08-13.pdf'),]
+
+
+
 epa$YEAR = epa$Year
 epa$AGENCY = epa$Agency
 epa_docs$YEAR = epa$YEAR[match(epa_docs$EIS.Number,epa$EIS.Number)]

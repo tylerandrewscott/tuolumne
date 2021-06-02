@@ -40,6 +40,9 @@ projects$DECISION[projects$clean.title %in% c("Rocky Mountain Arsenal National W
 projects$AGENCY <- fct_infreq(projects$AGENCY)
 projects$AGENCY_SHORT <- fct_infreq(projects$AGENCY_SHORT)
 
+
+
+
 if(RERUN){
   if(Sys.info()[['sysname']]== 'Linux'){flist_dt = readRDS('../bucket_mount/tuolumne/scratch/boilerplate/big_text_files/big_eis_text.rds')}
   if(Sys.info()[['sysname']]!= 'Linux'){flist_dt = readRDS('scratch/boilerplate/big_text_files/big_eis_text.rds')}
@@ -175,7 +178,7 @@ if(RERUN){
       theme_map() +
       ggtitle("Estimated project centroids from geotagging") + theme(text = element_text(size = 12)) +
       NULL
-    ggsave(plot = gg_centroid,filename = 'boilerplate_project/output/figures/estimated_centroids.png',dpi = 300,width = 7,height =  6,units = 'in')
+    ggsave(plot = gg_centroid,filename = 'boilerplate_project/output/figures/b1_estimated_centroids.png',dpi = 300,width = 7,height =  6,units = 'in')
   }
   estimate_loc = eis_ids[!eis_ids %in% project_centroids$EIS.Number]
   ### add in agency-wide replacements for four missing locations ####
@@ -228,15 +231,32 @@ if(RERUN){
   ltd_total$total_eis = tots$N[match(ltd_total$recode,tots$AGENCY_SHORT)]
   ltd_total$litigation_per_eis = ltd_total$V1/ltd_total$total_eis
   
-  
-  
+
   ideology_sheet = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSOSX--qpOSyBZcW3OWeWRmiC2-eC74un7fZYXFCzrW8FNB1FOQFMaIq-CW8hMIoBqtZMXYR05UA7Lu/pub?output=csv'
   ideol = fread(ideology_sheet)
   subs = str_split(ideol$epaStandIn,', ')
-  projects$index = match(projects$Lead.Agency,ideol$epaName)
-  projects = data.table(projects,ideol[unlist(sapply(projects$Lead.Agency,function(x) c(grep(x,ideol$epaName),grep(x,ideol$epaStandIn)))),])
+  ideol[ideol$agency=="Department of Health and Human Services" ]
+  index = match(projects$Lead.Agency, ideol$epaName)
+  index[is.na(index)] <- as.vector(sapply(projects$Lead.Agency[is.na(index)],function(y) {
+ which(sapply(subs,function(x) y %in% x))}))
+ 
+  projects = data.table(projects,ideol[index,])
   
-  projects$skills_rating[is.na(projects$skills_rating)] <- 0
+
+
+  require(ggrepel)
+  
+  projects[is.na(skills_rating)]$skills_rating<-0
+gg_agency = ggplot(projects[!duplicated(acr),]) + 
+    geom_point(aes(x = skills_rating,y = ideo_rating)) + 
+    geom_label_repel(aes(x = skills_rating,y = ideo_rating,label = acr),max.overlaps = 15) + 
+    theme_bw() +
+    xlab('lower <-- Perceived workforce skill --> higher') +
+   ylab('left <-- Perceived political ideology --> right') +
+    ggtitle('Perceived agency workforce skill and ideology') +
+    labs(caption = "(data from Richardson et al. 2018)")
+  
+ggsave(filename = 'boilerplate_project/output/figures/b2_agency_attributes.png',plot = gg_agency,dpi=500,width = 6,height = 6,units = 'in')
   
   library(lubridate)
   #if(runEISnet){ 
@@ -329,6 +349,8 @@ eis_order = rank(eis_net %v% 'EIS')
 
 
 temp_eis_net <- eis_net
+ 
+table(temp_eis_net %v% 'Output')
 
 if(run_basemod){
   
@@ -486,17 +508,6 @@ gof_deg_object2 = gofit.lolog(object = mod_lolog_cov[[2]],formula = temp_eis_net
 gof_esp_object2 = gofit(object = mod_lolog_cov,formula = temp_eis_net ~ esp(0:25),nsim = 1000)
 
 
-
-
-plot(gof_deg_object2)
-plot(gof_esp_object2)
-lolog(eis_net ~ edges + offset(),nsamp = 100)
-
-require(statnet)
-require(lolog)
-mod_lolog_cov
-
-
 # NA to summarize
 diag(eis_consult_matrix)<- NA
 diag(eis_author_matrix)<- NA
@@ -519,334 +530,6 @@ library(doParallel)
 require(statnet)
 library(ergm.count)
 
-
-
-
-socmat = as.sociomatrix(temp_eis_net)
-socmat[lower.tri(socmat)]<- 1
-socmat[upper.tri(socmat)]<- 0
-
-summary(temp_eis_net ~ mutual)
-
-mod_temp_lolog = lolog(temp_eis_net ~ edges + mutual +   gwdegree(0.25,'in') + 
-                        # gwdegree(alpha = 0.5,direction = 'in') +
-                        # gwdegree(alpha = 0.5,direction = 'out') +
-                         gwesp(alpha = 0.25),nsamp = 100)
-
-
-devtools::install_github('statnet/lolog')
-library(lolog)
-data(ukFaculty)
-net <- as.BinaryNet(ukFaculty)
-lolog(net ~ edges + constraint(boundedDegree(0L, 10L)))
-
-
-#,offset.coef = -Inf)
-
-
-?offset
-+
-                         gwdegree(alpha = 0.5,'in') +
-                         gwdegree(alpha = 0.5,'out') +
-                         gwesp(alpha = 0.25) + 
-                         #degree(0) +
-                         nodeFactor('Year') +
-                         nodeCov('ln_Pages_Hashed') +
-                         nodeMatch('Agency_Short') +
-                         nodeFactor('Consultant')+
-                         nodeCov('Skill_Rating') + 
-                         nodeCov('Ideo_Rating') + 
-                         nodeCov('NEPA_litigation_per_FEIS_2001_2012') +
-                         absDiff('Fed_Reg_Date') +
-                         nodeFactor('Output')+
-                         nodeCov('ln(Readability score)')|eis_order,
-                       cluster = cl,offset.coef
-                       nsamp = 10000,verbose=1, maxIter = 100,includeOrderIndependent = T,maxStepSize = 4,nHalfSteps = 5)
-
-
-
-
-+
-  
-  
-  
-  
-  gof_object = gofit(object = mod_temp_lolog,formula = temp_eis_net ~ degree(0:25))
-edgeCov(eis_distance_matrix,'Distance') +
-  edgeCov(eis_consult_matrix,'Consult') +
-  edgeCov(eis_author_matrix,'Author')
-
-
-summary(temp_eis_net ~ sum(0.5) +  mutual + transitiveties,response = 'Sqrt_Score_Count',reference = ~Geometric)
-
-
-
-
-mutual(form = 'min')+
-  nodesqrtcovar(center=TRUE) + 
-  cyclicalties + 
-  transitiveties + 
-  nodefactor('Year') +
-  nodecov('ln_Pages_Hashed') +
-  nodematch('Agency_Short') +
-  nodefactor('Consultant')+
-  nodecov('Skill_Rating') + nodecov('Ideo_Rating') + 
-  nodecov('NEPA_litigation_per_FEIS_2001_2012') +
-  absdiff('Fed_Reg_Date') +
-  nodefactor('Output')+
-  nodecov('ln(Readability score)') +
-  edgecov(eis_distance_matrix,'Distance') +
-  edgecov(eis_consult_matrix,'Consult') +
-  edgecov(eis_author_matrix,'Author'),
-response = 'Score_Count',reference = ~Geometric)
-
-
-
-cores = 45
-cl = makeCluster(cores)
-registerDoParallel(cl)
-
-mod_temp_lolog = lolog(temp_eis_net ~ edges +  triangles + degree(0) + # transitivity 
-                         nodeFactor('Year') +
-                         nodeCov('ln_Pages_Hashed') +
-                         nodeMatch('Agency_Short') +
-                         nodeFactor('Consultant')+
-                         nodeCov('Skill_Rating') + nodeCov('Ideo_Rating') + 
-                         nodeCov('NEPA_litigation_per_FEIS_2001_2012') +
-                         absDiff('Fed_Reg_Date') +
-                         nodeFactor('Output')+
-                         nodeCov('ln(Readability score)') +
-                         edgeCov(eis_distance_matrix,'Distance') +
-                         edgeCov(eis_consult_matrix,'Consult') +
-                         edgeCov(eis_author_matrix,'Author'),#|eis_order,
-                       cluster = cl,
-                       nsamp = 2000,verbose=1, maxIter = 100,includeOrderIndependent = T)#,maxStepSize = 4,nHalfSteps = 5)
-
-
-
-list.edge.attributes(temp_eis_net)
-
-summary(temp_eis_net ~ sum + nonzero + mutual(form = 'min')+
-          nodesqrtcovar(center=TRUE) + 
-          cyclicalweights() + 
-          transitiveweights() + 
-          nodefactor('Year') +
-          nodecov('ln_Pages_Hashed') +
-          nodematch('Agency_Short') +
-          nodefactor('Consultant')+
-          nodecov('Skill_Rating') + nodecov('Ideo_Rating') + 
-          nodecov('NEPA_litigation_per_FEIS_2001_2012') +
-          absdiff('Fed_Reg_Date') +
-          nodefactor('Output')+
-          nodecov('ln(Readability score)') +
-          edgecov(eis_distance_matrix,'Distance') +
-          edgecov(eis_consult_matrix,'Consult') +
-          edgecov(eis_author_matrix,'Author'),
-        response = 'Prop_Pages',reference = ~Unif(0,1),eval.loglik = F,constraints = ~degreedist,
-        control = control.ergm(parallel = 25, parallel.type = 'PSOCK', 
-                               MCMC.samplesize = 1e4 ,MCMLE.density.guard = 3,MCMLE.trustregion = 100),verbose = F)
-
-
-bd_maxin = ifelse(1:network.size(temp_eis_net) %in% which(degree(temp_eis_net,gmode = 'digraph',cmode = 'indegree')>200),degree(temp_eis_net,gmode = 'digraph',cmode = 'indegree'),NA)
-bd_maxout = ifelse(1:network.size(temp_eis_net) %in% which(degree(temp_eis_net,gmode = 'digraph',cmode = 'outdegree')>200),degree(temp_eis_net,gmode = 'digraph',cmode = 'outdegree'),NA)
-degree(temp_eis_net,gmode = 'digraph',cmode = 'indegree',ignore.eval = F)
-
-
-
-mod_ergm = ergm(temp_eis_net ~ sum + #nonzero + 
-                  mutual(form = 'min')+
-                  nodesqrtcovar(center=TRUE) + 
-                  #cyclicalweights() + 
-                  #transitiveweights() + 
-                  nodefactor('Year') +
-                  nodecov('ln_Pages_Hashed') +
-                  nodematch('Agency_Short') +
-                  nodefactor('Consultant')+
-                  nodecov('Skill_Rating') + nodecov('Ideo_Rating') + 
-                  nodecov('NEPA_litigation_per_FEIS_2001_2012') +
-                  absdiff('Fed_Reg_Date') +
-                  nodefactor('Output')+
-                  nodecov('ln(Readability score)') +
-                  edgecov(eis_distance_matrix,'Distance') +
-                  edgecov(eis_consult_matrix,'Consult') +
-                  edgecov(eis_author_matrix,'Author'),
-                response = 'Sqrt_Score_Count',reference = ~Poisson,eval.loglik = F,
-                control = control.ergm(parallel = 60, parallel.type = 'PSOCK', MCMLE.maxit = 50,
-                                       MCMC.samplesize = 5e4 ,MCMLE.density.guard = 3,MCMLE.trustregion = 100),verbose = F)
-
-
-mod_ergm2 = ergm(temp_eis_net ~ sum(0.5) + #nonzero + 
-                   #mutual(form = 'min')+
-                   nodesqrtcovar(center=TRUE) + 
-                   #cyclicalweights() + 
-                   #transitiveweights() + 
-                   nodefactor('Year') +
-                   nodecov('ln_Pages_Hashed') +
-                   nodematch('Agency_Short') +
-                   nodefactor('Consultant')+
-                   nodecov('Skill_Rating') + nodecov('Ideo_Rating') + 
-                   nodecov('NEPA_litigation_per_FEIS_2001_2012') +
-                   absdiff('Fed_Reg_Date') +
-                   nodefactor('Output')+
-                   nodecov('ln(Readability score)') +
-                   edgecov(eis_distance_matrix,'Distance') +
-                   edgecov(eis_consult_matrix,'Consult') +
-                   edgecov(eis_author_matrix,'Author'),
-                 response = 'Score_Count',reference = ~Geometric,eval.loglik = F,
-                 control = control.ergm(parallel = 40, parallel.type = 'PSOCK', init = coef(mod_ergm),
-                                        MCMC.samplesize = 1e4 ,MCMLE.density.guard = 3,MCMLE.trustregion = 100),verbose = F)
-
-
-ksummary(mod_ergm)
-plot(test[[1]])
-test = simulate(mod_ergm,nsim = 10)
-sapply(test,network.density)
-
-sapply(test,function(x) summary(x ~ asymmetric))
-summary(mod_ergm)
-
-sapply(test,function(x) summary(x ~ sum(0.5) + mutual,response = 'Score_Count',reference=~Geometric))
-
-
-MCMC.samplesize = 5e3,MCMLE.maxit = 10,MCMLE.trustregion = 100),verbose = F)
-
-
-
-
-
-response = 'Score_Count',reference = ~ Geometric,
-offset.coef = Inf,control = control.ergm(MCMLE.maxit = 2,CD.maxit = 10),eval.loglik = F)
-
-
-
-test = simulate(mod_ergm,nsim = 1)
-isSymmetric(as.sociomatrix(test,'Score_Count'))
-
-sim = simulate(temp_eis_net ~ sum(0.5) + equalto(value = 0) + equalto(value = 1) + offset(mutual(form = 'min')) + nodesqrtcovar(center=TRUE),
-               response = 'Score_Count',reference = ~Poisson,offset.coef = Inf)
-
-
-summary(sim ~ equalto(value = 0),response = 'Score_Count',reference = ~Poisson)
-summary(temp_eis_net ~ equalto(value = 0),response = 'Score_Count',reference = ~Poisson)
-
-summary(degree(temp_eis_net))
-summary(degree(sim))
-as.sociomatrix(sim,'Score_Count')[1:100,1:100]
-
-
-
-summary(test ~ asymmetric)
-summary(temp_eis_net ~ sum(0.5) + equalto(value = 0) + equalto(value = 1) + offset(mutual(form = 'min')) + nodesqrtcovar(center=TRUE) + offset(asymmetric) +
-          transitiveweights(twopath="min",combine="max",affect="min")  , response = 'Score_Count',reference = ~Poisson,offset.coef = Inf)
-
-mod_ergm = ergm(temp_eis_net ~ sum(0.5) + 
-                  equalto(value = 0) + equalto(value = 1) + #equalto(value = 20) +
-                  offset(mutual(form = 'min')) +  
-                  nodesqrtcovar(center=TRUE) + 
-                  transitiveweights() + 
-                  nodefactor('Year') +
-                  nodecov('ln_Pages_Hashed') +
-                  nodematch('Agency_Short') +
-                  nodefactor('Consultant')+
-                  nodecov('Skill_Rating') + nodecov('Ideo_Rating') + 
-                  nodecov('NEPA_litigation_per_FEIS_2001_2012') +
-                  absdiff('Fed_Reg_Date') +
-                  nodefactor('Output')+
-                  nodecov('ln(Readability score)') +
-                  edgecov(eis_distance_matrix,'Distance') +
-                  edgecov(eis_consult_matrix,'Consult') +
-                  edgecov(eis_author_matrix,'Author'),
-                response = 'Score_Count',reference = ~Geometric,eval.loglik = F,offset.coef = Inf,
-                control = control.ergm(parallel = 80, parallel.type = 'PSOCK',init = coef(mod_ergm),
-                                       MCMLE.density.guard = 3,MCMC.samplesize = 5e3,MCMLE.maxit = 50,MCMLE.trustregion = 100),verbose = F)
-
-
-
-control.ergm()$MCMC.samplesize
-saveRDS(mod_ergm,'../bucket_mount/tuolumne/ergmmod.rds')    
-
-
-
-+  triangles + degree(0) + # transitivity 
-  nodeFactor('Year') +
-  nodeCov('ln_Pages_Hashed') +
-  nodeMatch('Agency_Short') +
-  nodeFactor('Consultant')+
-  nodeCov('Skill_Rating') + nodeCov('Ideo_Rating') + 
-  nodeCov('NEPA_litigation_per_FEIS_2001_2012') +
-  absDiff('Fed_Reg_Date') +
-  nodeFactor('Output')+
-  nodeCov('ln(Readability score)') +
-  edgeCov(eis_consult_matrix>0,name = 'Same_Consultant') +
-  edgeCov(eis_author_matrix>0,name = 'Preparers') +
-  edgeCov(eis_distance_matrix,name = 'Distance')|eis_order,
-cluster = control.ergm(parallel=40, parallel.type="PSOCK"),
-nsamp = 2000,verbose=1, maxIter = 100,includeOrderIndependent = T,
-theta = mod_temp_eis$theta)#,maxStepSize = 4,nHalfSteps = 5)
-
-
-nodeCov('ln_Pages_Hashed') +
-  nodeMatch('Agency_Short') +
-  absDiff('Fed_Reg_Date') +
-  nodeCov('ln(Readability score)') +  
-  
-  nodeCov('NEPA_litigation_per_FEIS_2001_2012') +
-  
-  
-  edgeCov(eis_consult_matrix>0,name = 'Same_Consultant') +
-  edgeCov(eis_author_matrix>0,name = 'Preparers') +
-  edgeCov(eis_distance_matrix,name = 'Distance')|eis_order,
-
-
-
-mod_temp_eis2 = lolog(temp_eis_net ~ edges +  triangles + degree(0) + # transitivity 
-                        nodeFactor('Year') +
-                        nodeCov('ln_Pages_Hashed') +
-                        nodeMatch('Agency_Short') +
-                        nodeFactor('Consultant')+
-                        nodeCov('Skill_Rating') + nodeCov('Ideo_Rating') + 
-                        nodeCov('NEPA_litigation_per_FEIS_2001_2012') +
-                        absDiff('Fed_Reg_Date') +
-                        nodeFactor('Output')+
-                        nodeCov('ln(Readability score)') +
-                        edgeCov(eis_consult_matrix>0,name = 'Same_Consultant') +
-                        edgeCov(eis_author_matrix>0,name = 'Preparers') +
-                        edgeCov(eis_distance_matrix,name = 'Distance')|eis_order,
-                      cluster = cluster,
-                      nsamp = 2000,verbose=1, maxIter = 100,includeOrderIndependent = T,
-                      theta = mod_temp_eis$theta)#,maxStepSize = 4,nHalfSteps = 5)
-
-
-
-stopCluster(cluster)
-g <- gofit(mod_temp_eis, temp_eis_net ~ degree(0:20))
-g2 <- gofit(mod_temp_eis, temp_eis_net ~ esp(0:20))
-plot(g2)
-
-test = ergm(temp_eis_net ~ edges +  nodecov('ln_Pages_Hashed') + degree(0) + 
-              nodefactor('Consultant') + nodematch('Agency_Short') + 
-              nodecov('Skill_Rating') + nodecov('Ideo_Rating') ,
-            control = control.ergm(parallel = F),eval.loglik = F,estimate = 'MPLE')
-
-
-test2 =  lolog(temp_eis_net ~ edges  +  nodeCov('ln_Pages_Hashed') + degree(0) + 
-                 nodeMatch('Agency_Short') +
-                 nodeFactor('Consultant') +
-                 nodeCov('Skill_Rating') + nodeCov('Ideo_Rating') )
-
-summary(test)
-summary(test2)
-summary(temp_eis_net ~ edges + degree(0) + twopath + triangles + cycle(4))
-plot(temp_eis_net)
-
-
-
-g <- gofit(mod_temp_eis, temp_eis_net ~ degree(0:20))
-g2 <- gofit(mod_temp_eis, temp_eis_net ~ esp(0:20))
-
-plot(g2)
-
-#modlist = list(mod_temp_eis,mod_temp_eis_dist,mod_temp_eis_dist_interaction )
 
 
 
