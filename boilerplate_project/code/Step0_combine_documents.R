@@ -14,7 +14,7 @@ empty_doc_dt = data.table(YEAR = numeric(),FILE_NAME = character(), FILE_LOC = c
 
 require(data.table)
 require(stringr)
-epa = fread('../eis_documents/enepa_repository/meta_data/eis_record_detail.csv')
+epa = fread('boilerplate_project/input/eis_record_detail.csv')
 #epa = epa[Agency=='Forest Service',]
 
 epa = epa[Document=='Final',]
@@ -64,10 +64,10 @@ epa = epa[Agency %in% epa[,.N,Agency][order(N),][N>=5,]$Agency,]
 
 
 
-doc_url = '../eis_documents/enepa_repository/meta_data/eis_document_record.csv'
+doc_url = 'boilerplate_project/input/eis_document_record.csv'
 epa_docs = fread(doc_url)
 
-doc_url2 = '../eis_documents/enepa_repository/meta_data/extra_docs.csv'
+doc_url2 = 'boilerplate_project/input/extra_docs.csv'
 epa_docs2 = fread(doc_url2)
 
 epa_docs = rbindlist(list(epa_docs,epa_docs2),fill=T)
@@ -101,9 +101,6 @@ ex = gsub('pdf$|PDF$','txt',epa_docs$File_Name) %in% basename(text_flist)
 epa_sub_docs = epa_docs[ex,]
 epa_sub = epa
 epa_sub$HAVE_DOCS = epa_sub$EIS.Number %in% epa_sub_docs$EIS.Number
-
-library(htmlTable)
-
 
 projects = epa_sub
 documents = epa_sub_docs

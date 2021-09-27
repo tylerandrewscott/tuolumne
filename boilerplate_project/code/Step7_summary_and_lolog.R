@@ -1,19 +1,18 @@
-pack = c("tidyverse","Matrix","statnet","data.table","stringr","lolog","textreuse","gridExtra","sf","lubridate","doParallel","htmlTable",'treemapify',"ggridges","ggplot2","viridis","hrbrthemes","forcats",'ggthemes','tm','pbapply')
+pack = c("tidyverse","Matrix","statnet","data.table","stringr","lolog","ggrepel","textreuse","gridExtra","sf","lubridate","doParallel","htmlTable","ggplot2","viridis","forcats",'ggthemes','tm','pbapply','htmlTable')
 need = !pack %in% installed.packages()[,"Package"]
 #sudo apt-get install libfontconfig1-dev
 if(any(need)){sapply(pack[need],install.packages)}
 sapply(pack,require,character.only=T)
 
-run_basemod = T
-REWRITE = F
-RERUN = F
+run_basemod = F
+REWRITE = T
+RERUN = T
 #update.packages(ask = FALSE, checkBuilt = TRUE)
 runEISnet = TRUE
 mcores = detectCores() - 2
 samples = 10000
 iters = 40
 stepsize = 500
-require(forcats)
 
 
 projects = fread('boilerplate_project/data_products/project_candidates_eis_only.csv')
@@ -142,7 +141,7 @@ if(RERUN){
        #limits=c(0,round(max(countover300$over300/countover300$total_pages) ,1))) + 
        theme(legend.title = element_blank(),axis.title.y = element_blank(),legend.position = c(0.8,0.25),axis.text = element_text(size = 12)) + ggtitle("Text reuse between EISs by project and agency"))
     
-    ggsave(gg_pages_over_300,filename = 'boilerplate_project/output/figures/agencies_lda_over_300.png',dpi = 300,units = 'in',height = 4.5,width = 6)
+    ggsave(gg_pages_over_300,filename = 'boilerplate_project/output/figures/Figure3_agencies_lda_over_300.png',dpi = 300,units = 'in',height = 4.5,width = 6)
   }
   eis_ids = unique(projects$EIS.Number[projects$USE_DOCS])
   n_eis = length(eis_ids)
@@ -178,7 +177,7 @@ if(RERUN){
       theme_map() +
       ggtitle("Estimated project centroids from geotagging") + theme(text = element_text(size = 12)) +
       NULL
-    ggsave(plot = gg_centroid,filename = 'boilerplate_project/output/figures/b1_estimated_centroids.png',dpi = 300,width = 7,height =  6,units = 'in')
+    ggsave(plot = gg_centroid,filename = 'boilerplate_project/output/figures/FigureA5_estimated_centroids.png',dpi = 300,width = 7,height =  6,units = 'in')
   }
   estimate_loc = eis_ids[!eis_ids %in% project_centroids$EIS.Number]
   ### add in agency-wide replacements for four missing locations ####
@@ -205,7 +204,7 @@ if(RERUN){
   consult_Freq = consults[EIS.Number %in% projects$EIS.Number[projects$USE_DOCS],][,.N,by = .(FIRM)][order(-N)][N>=10,]
   if(REWRITE){
     #consults[PROJECT_ID %in% epa_record$EIS.Number,][,.N,by = .(FIRM)][order(-N)][1:25,]
-    require(htmlTable)
+
     tableout <-htmlTable(consult_Freq)
     outdir.tables = 'boilerplate_project/output/tables/'
     sink(paste0(outdir.tables,"consultant_table.html"))
@@ -222,7 +221,7 @@ if(RERUN){
   project_to_project_consult_matrix = slam::crossprod_simple_triplet_matrix(consult_triplet)
   
   lit_dt = fread('boilerplate_project/data_products/nepa_litigation_by_agency_year.csv')
-  ldt_long = melt(lit_dt,id.vars = 'recode',measure.vars = patterns('y[0-9]'))
+  ldt_long = reshape2::melt(lit_dt,id.vars = 'recode',measure.vars = patterns('y[0-9]'))
   ldt_long$year <- as.numeric(str_remove(ldt_long$variable,'[a-z]'))
   ltd_total = ldt_long[year<2013,][,sum(value,na.rm = T),by=.(recode)]
   
@@ -244,7 +243,6 @@ if(RERUN){
   
 
 
-  require(ggrepel)
   
   projects[is.na(skills_rating)]$skills_rating<-0
 gg_agency = ggplot(projects[!duplicated(acr),]) + 
@@ -256,9 +254,9 @@ gg_agency = ggplot(projects[!duplicated(acr),]) +
     ggtitle('Perceived agency workforce skill and ideology') +
     labs(caption = "(data from Richardson et al. 2018)")
   
-ggsave(filename = 'boilerplate_project/output/figures/b2_agency_attributes.png',plot = gg_agency,dpi=500,width = 6,height = 6,units = 'in')
+ggsave(filename = 'boilerplate_project/output/figures/A6_agency_attributes.png',plot = gg_agency,dpi=500,width = 6,height = 6,units = 'in')
   
-  library(lubridate)
+ 
   #if(runEISnet){ 
   #eis_p_list = pblapply(seq(2,20,2),function(p) {
   
@@ -290,7 +288,7 @@ ggsave(filename = 'boilerplate_project/output/figures/b2_agency_attributes.png',
   
   (gg_threshold = ggplot() + geom_vline(xintercept = 3,lty = 2,col = 'grey50') + geom_path(aes(x = x_vals,y= dns)) + geom_point(aes(x = x_vals,y= dns)) + theme_bw() + 
       xlab('threshold for y_ij = 1') + ylab('graph density') + ggtitle('Graph density vs. threshold for shared pages'))
-  ggsave(plot = gg_threshold,filename = 'boilerplate_project/output/figures/tiethreshold_density.png',height = 4,width = 6,units = 'in',dpi = 500)
+  ggsave(plot = gg_threshold,filename = 'boilerplate_project/output/figures/FigureA3_tiethreshold_density.png',height = 4,width = 6,units = 'in',dpi = 500)
   
   
   
@@ -403,15 +401,15 @@ saveRDS(object = list(gof_deg_object2,gof_esp_object2),'boilerplate_project/data
 
 
 gof = readRDS('boilerplate_project/data_products/lolog_gof.rds')
-dof = melt(gof[[1]]$stats)
-obs = melt( gof[[1]]$ostats)
+dof = reshape2::melt(gof[[1]]$stats)
+obs = reshape2::melt( gof[[1]]$ostats)
 obs$degree = as.numeric(str_extract(rownames(obs),'[0-9]{1,}'))
 g1 = ggplot() + geom_path(data = dof,aes(x = Var2-1,group = Var1,y = value),alpha = 0.2,lwd = 0.1) + 
   theme_bw() + geom_path(data = obs,aes(x = degree,y= value),lwd = 1,col = 'red') + xlab('# degrees') + 
   ylab('# of structures observed or simulated') 
 
-dof2 = melt(gof[[2]]$stats)
-obs2 = melt( gof[[2]]$ostats)
+dof2 = reshape2::melt(gof[[2]]$stats)
+obs2 = reshape2::melt( gof[[2]]$ostats)
 obs2$degree = as.numeric(str_extract(rownames(obs2),'[0-9]{1,}'))
 
 g2 = ggplot() + geom_path(data = dof2,aes(x = Var2-1,group = Var1,y = value,col ='black'),alpha = 0.3,lwd = 0.1) + 
@@ -421,7 +419,7 @@ g2 = ggplot() + geom_path(data = dof2,aes(x = Var2-1,group = Var1,y = value,col 
  # guides(color = guide_legend(override.aes = list(lwd = c(1,1),labels= c('A','B'),col = c('1','2'))))
   theme(legend.position = c(0.7,0.9),legend.title = element_blank(),legend.background = element_rect(fill = alpha('white',0)))
 
-ggsave(grid.arrange(g1,g2,ncol = 2,top = 'Model goodness-of-fit: observed vs. simulated structures'),filename = 'boilerplate_project/output/figures/appendix_gof_plots.png',dpi = 500, width = 7,height = 3.5, units = 'in')
+ggsave(grid.arrange(g1,g2,ncol = 2,top = 'Model goodness-of-fit: observed vs. simulated structures'),filename = 'boilerplate_project/output/figures/FigureA4_appendix_gof_plots.png',dpi = 500, width = 7,height = 3.5, units = 'in')
 
 if(!run_basemod){
   #mod_lolog = readRDS('boilerplate_project/data_products/base_lolog_nocovariates.rds')
@@ -471,39 +469,8 @@ sink()
 
 
 
-
-(eis_grob = ggplot(eis_mresults[coef!='edges']) + 
-    geom_hline(yintercept = 0,lty = 2,col = 'grey50') + 
-    geom_errorbar(aes(ymin = theta - 1.96 * se,ymax = theta + 1.96 * se,x = coef),
-                  width = 0.2,lwd = .75,position = position_dodge(width = .3)) + 
-    geom_point(aes(y = theta,x= coef),position = position_dodge2(width = .3),shape = 19,size = .75) + 
-    # geom_point(data = eis_dt[coef!='edges'&p==5&mod==1&sig==0,],fill = 'white',
-    #            aes(y = theta,x= coef,
-    #                col = as.factor(mod)),position = position_dodge2(width = .3),shape = 21,size = .75) + 
-    theme(axis.text.y = element_blank()) + ggtitle('Predicting high reuse between EISs') + 
-    ylab(expression(`less likely` %<-% `boilerplate` %->% `more likely`))+
-    coord_flip() + theme_bw() +
-    scale_color_colorblind(name = 'model',labels = c('95% confidence interval')) + 
-    scale_fill_manual(values = c(NA,'white',NA))+
-    theme(legend.position = c(0.7,0.075),legend.text = element_text(size = 10),
-          axis.title.y = element_blank(),legend.background = element_rect(fill = NA),
-          text = element_text(size = 10,family = 'Times'),legend.title = element_blank(),axis.title.x = element_text(size = 10)) +
-    guides(shape = FALSE,fill = F) + 
-    NULL)
-
-msum
-ggsave(plot = eis_grob,filename = 'boilerplate_project/output/figures/eis_lolog.png',width = 5,height = 3.4,units = 'in',dpi = 300)
-
-
-
-
-ggplot(msum
-
-
-mod_lolog_cov$theta
-
-gof_deg_object = gofit(object = mod_lolog,formula = temp_eis_net ~ degree(0:50),nsim = 1000)
-gof_esp_object = gofit(object = mod_lolog,formula = temp_eis_net ~ esp(0:25),nsim = 1000)
+#gof_deg_object = gofit(object = mod_lolog,formula = temp_eis_net ~ degree(0:50),nsim = 1000)
+#gof_esp_object = gofit(object = mod_lolog,formula = temp_eis_net ~ esp(0:25),nsim = 1000)
 gof_deg_object2 = gofit.lolog(object = mod_lolog_cov[[2]],formula = temp_eis_net ~ degree(0:50),nsim = 1000)
 gof_esp_object2 = gofit(object = mod_lolog_cov,formula = temp_eis_net ~ esp(0:25),nsim = 1000)
 
@@ -520,15 +487,7 @@ diag(eis_consult_matrix)<- 1
 diag(eis_author_matrix)<- 1
 diag(eis_distance_matrix)<- 0
 
-
-rm(flist_dt);rm(meta_dt)
 gc()
-
-library(parallel)
-library(doParallel)
-
-require(statnet)
-library(ergm.count)
 
 
 

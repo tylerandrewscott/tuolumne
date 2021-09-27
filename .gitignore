@@ -20,4 +20,6 @@
 .DS_Store
 
 
-!/boilerplate_project/
+!/boilerplate_project/data_products/
+!/boilerplate_project/output
+/boilerplate_project/input/*
