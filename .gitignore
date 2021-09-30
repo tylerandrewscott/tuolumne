@@ -23,3 +23,6 @@
 !/boilerplate_project/data_products/
 !/boilerplate_project/output
 /boilerplate_project/input/*
+/climate_in_eis_project/input/*
+/climate_in_eis_project/scratch/*
+/climate_in_eis_project/yearly_quanteda_tokens/*

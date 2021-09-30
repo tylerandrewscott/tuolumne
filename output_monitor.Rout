@@ -1,11 +1,13 @@
 
-R version 3.6.3 (2020-02-29) -- "Holding the Windsock"
-Copyright (C) 2020 The R Foundation for Statistical Computing
-Platform: x86_64-pc-linux-gnu (64-bit)
+R version 4.1.1 (2021-08-10) -- "Kick Things"
+Copyright (C) 2021 The R Foundation for Statistical Computing
+Platform: x86_64-apple-darwin17.0 (64-bit)
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.
 You are welcome to redistribute it under certain conditions.
 Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
 
 R is a collaborative project with many contributors.
 Type 'contributors()' for more information and
@@ -16,459 +18,137 @@ Type 'demo()' for some demos, 'help()' for on-line help, or
 Type 'q()' to quit R.
 
 > 
-> if(!require(tokenizers)){install.packages('tokenizers');require(tokenizers)}
-Loading required package: tokenizers
-> if(!require(spacyr)){install.packages('spacyr');require(spacyr)}
-Loading required package: spacyr
-> if(!require(tigris)){install.packages('tigris');require(tigris)}
-Loading required package: tigris
-To enable 
-caching of data, set `options(tigris_use_cache = TRUE)` in your R script or .Rprofile.
-> if(!require(maptools)){install.packages('maptools');require(maptools)}
-Loading required package: maptools
-Loading required package: sp
-Checking rgeos availability: TRUE
-> if(!require(acs)){install.packages('acs');require(acs)}
-Loading required package: acs
-Loading required package: stringr
-Loading required package: XML
-
-Attaching package: ‘acs’
-
-The following object is masked from ‘package:base’:
-
-    apply
-
-> if(!require(pbapply)){install.packages('pbapply');require(pbapply)}
-Loading required package: pbapply
-> if(!require(data.table)){install.packages('data.table');require(data.table)}
-Loading required package: data.table
-> if(!require(sf)){install.packages('sf');require(sf)}
-Loading required package: sf
-Linking to GEOS 3.7.1, GDAL 2.4.0, PROJ 5.2.0
-> if(!require(doParallel)){install.packages('doParallel');require(doParallel)}
-Loading required package: doParallel
-Loading required package: foreach
-Loading required package: iterators
-Loading required package: parallel
 > 
-> #spacy_install(conda = "auto", version = "latest", lang_models = "en",
-> #              python_version = "3.6", envname = "spacy_condaenv", pip = FALSE,
-> #              python_path = NULL, prompt = TRUE)
-> 
-> #spacyr::spacy_download_langmodel(model = model,)
-> model = 'en_core_web_sm'
-> spacyr::spacy_initialize(model)
+> #devtools::install_github("quanteda/spacyr", build_vignettes = FALSE)
+> library("spacyr")
+> #spacy_install()
+> spacy_initialize()
 Found 'spacy_condaenv'. spacyr will use this environment
-successfully initialized (spaCy Version: 2.2.3, language model: en_core_web_sm)
+successfully initialized (spaCy Version: 2.3.2, language model: en_core_web_sm)
 (python options: type = "condaenv", value = "spacy_condaenv")
 > 
-> floc = 'scratch/'
-> #saveloc = 'temp_products/'
+> require(tokenizers);require(rvest)
+Loading required package: tokenizers
+Loading required package: rvest
 > 
-> cors = detectCores() - 10
-> cl = makeCluster(cors)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-/bin/bash: /home/master/.local/share/r-miniconda/envs/spacy_condaenv/lib/libtinfo.so.6: no version information available (required by /bin/bash)
-> registerDoParallel(cl)
+> source('climate_in_eis_project/code/functions/FindCleanPages.R')
+> packs = c('stm','data.table','stringr','readtext','pbapply','maps','quanteda','tm')
+> sapply(packs[!sapply(packs,require,character.only = T)],install.packages)
+Loading required package: stm
+stm v1.3.6 successfully loaded. See ?stm for help. 
+ Papers, resources, and other materials at structuraltopicmodel.com
+Loading required package: data.table
+Loading required package: stringr
+Loading required package: readtext
+Loading required package: pbapply
+Loading required package: maps
+Loading required package: quanteda
+Package version: 3.1.0
+Unicode version: 13.0
+ICU version: 69.1
+Parallel computing: 8 of 8 threads used.
+See https://quanteda.io for tutorials and examples.
+Loading required package: tm
+Loading required package: NLP
+
+Attaching package: ‘NLP’
+
+The following objects are masked from ‘package:quanteda’:
+
+    meta, meta<-
+
+
+Attaching package: ‘tm’
+
+The following object is masked from ‘package:quanteda’:
+
+    stopwords
+
+named list()
+> sapply(packs,require,character.only = T)
+       stm data.table    stringr   readtext    pbapply       maps   quanteda 
+      TRUE       TRUE       TRUE       TRUE       TRUE       TRUE       TRUE 
+        tm 
+      TRUE 
 > 
-> full_tlist <- readRDS('../bucket_mount/tuolumne/scratch/boilerplate/big_text_files/big_eis_text.rds')
+> redraw_corpus = TRUE
 > 
-> top40pages = full_tlist[Page %in% 1:50,]
+> projs = readRDS('scratch/climate_in_nepa/eis_metadata.RDS')
+> docs = readRDS('scratch/climate_in_nepa/eis_doc_metadata.RDS')
 > 
-> county_tigris = tigris::counties(class = 'sf',year = '2017')
-  |                                                                              |                                                                      |   0%  |                                                                              |                                                                      |   1%  |                                                                              |=                                                                     |   1%  |                                                                              |=                                                                     |   2%  |                                                                              |==                                                                    |   2%  |                                                                              |==                                                                    |   3%  |                                                                              |==                                                                    |   4%  |                                                                              |===                                                                   |   4%  |                                                                              |===                                                                   |   5%  |                                                                              |====                                                                  |   5%  |                                                                              |====                                                                  |   6%  |                                                                              |=====                                                                 |   7%  |                                                                              |=====                                                                 |   8%  |                                                                              |======                                                                |   8%  |                                                                              |======                                                                |   9%  |                                                                              |=======                                                               |   9%  |                                                                              |=======                                                               |  10%  |                                                                              |=======                                                               |  11%  |                                                                              |========                                                              |  11%  |                                                                              |========                                                              |  12%  |                                                                              |=========                                                             |  12%  |                                                                              |=========                                                             |  13%  |                                                                              |=========                                                             |  14%  |                                                                              |==========                                                            |  14%  |                                                                              |==========                                                            |  15%  |                                                                              |===========                                                           |  15%  |                                                                              |===========                                                           |  16%  |                                                                              |============                                                          |  17%  |                                                                              |============                                                          |  18%  |                                                                              |=============                                                         |  18%  |                                                                              |=============                                                         |  19%  |                                                                              |==============                                                        |  19%  |                                                                              |==============                                                        |  20%  |                                                                              |==============                                                        |  21%  |                                                                              |===============                                                       |  21%  |                                                                              |===============                                                       |  22%  |                                                                              |================                                                      |  22%  |                                                                              |================                                                      |  23%  |                                                                              |================                                                      |  24%  |                                                                              |=================                                                     |  24%  |                                                                              |=================                                                     |  25%  |                                                                              |==================                                                    |  25%  |                                                                              |==================                                                    |  26%  |                                                                              |===================                                                   |  26%  |                                                                              |===================                                                   |  27%  |                                                                              |===================                                                   |  28%  |                                                                              |====================                                                  |  28%  |                                                                              |====================                                                  |  29%  |                                                                              |=====================                                                 |  29%  |                                                                              |=====================                                                 |  30%  |                                                                              |=====================                                                 |  31%  |                                                                              |======================                                                |  31%  |                                                                              |======================                                                |  32%  |                                                                              |=======================                                               |  32%  |                                                                              |=======================                                               |  33%  |                                                                              |=======================                                               |  34%  |                                                                              |========================                                              |  34%  |                                                                              |========================                                              |  35%  |                                                                              |=========================                                             |  35%  |                                                                              |=========================                                             |  36%  |                                                                              |==========================                                            |  36%  |                                                                              |==========================                                            |  37%  |                                                                              |==========================                                            |  38%  |                                                                              |===========================                                           |  38%  |                                                                              |===========================                                           |  39%  |                                                                              |============================                                          |  39%  |                                                                              |============================                                          |  40%  |                                                                              |============================                                          |  41%  |                                                                              |=============================                                         |  41%  |                                                                              |=============================                                         |  42%  |                                                                              |==============================                                        |  42%  |                                                                              |==============================                                        |  43%  |                                                                              |==============================                                        |  44%  |                                                                              |===============================                                       |  44%  |                                                                              |===============================                                       |  45%  |                                                                              |================================                                      |  45%  |                                                                              |================================                                      |  46%  |                                                                              |=================================                                     |  46%  |                                                                              |=================================                                     |  47%  |                                                                              |=================================                                     |  48%  |                                                                              |==================================                                    |  48%  |                                                                              |==================================                                    |  49%  |                                                                              |===================================                                   |  49%  |                                                                              |===================================                                   |  50%  |                                                                              |===================================                                   |  51%  |                                                                              |====================================                                  |  51%  |                                                                              |====================================                                  |  52%  |                                                                              |=====================================                                 |  52%  |                                                                              |=====================================                                 |  53%  |                                                                              |=====================================                                 |  54%  |                                                                              |======================================                                |  54%  |                                                                              |======================================                                |  55%  |                                                                              |=======================================                               |  55%  |                                                                              |=======================================                               |  56%  |                                                                              |========================================                              |  56%  |                                                                              |========================================                              |  57%  |                                                                              |========================================                              |  58%  |                                                                              |=========================================                             |  58%  |                                                                              |=========================================                             |  59%  |                                                                              |==========================================                            |  59%  |                                                                              |==========================================                            |  60%  |                                                                              |==========================================                            |  61%  |                                                                              |===========================================                           |  61%  |                                                                              |===========================================                           |  62%  |                                                                              |============================================                          |  62%  |                                                                              |============================================                          |  63%  |                                                                              |=============================================                         |  64%  |                                                                              |=============================================                         |  65%  |                                                                              |==============================================                        |  65%  |                                                                              |==============================================                        |  66%  |                                                                              |===============================================                       |  66%  |                                                                              |===============================================                       |  67%  |                                                                              |===============================================                       |  68%  |                                                                              |================================================                      |  68%  |                                                                              |================================================                      |  69%  |                                                                              |=================================================                     |  69%  |                                                                              |=================================================                     |  70%  |                                                                              |=================================================                     |  71%  |                                                                              |==================================================                    |  71%  |                                                                              |==================================================                    |  72%  |                                                                              |===================================================                   |  72%  |                                                                              |===================================================                   |  73%  |                                                                              |====================================================                  |  74%  |                                                                              |====================================================                  |  75%  |                                                                              |=====================================================                 |  75%  |                                                                              |=====================================================                 |  76%  |                                                                              |======================================================                |  77%  |                                                                              |======================================================                |  78%  |                                                                              |=======================================================               |  78%  |                                                                              |=======================================================               |  79%  |                                                                              |========================================================              |  79%  |                                                                              |========================================================              |  80%  |                                                                              |========================================================              |  81%  |                                                                              |=========================================================             |  81%  |                                                                              |=========================================================             |  82%  |                                                                              |==========================================================            |  82%  |                                                                              |==========================================================            |  83%  |                                                                              |===========================================================           |  84%  |                                                                              |===========================================================           |  85%  |                                                                              |============================================================          |  85%  |                                                                              |============================================================          |  86%  |                                                                              |=============================================================         |  87%  |                                                                              |=============================================================         |  88%  |                                                                              |==============================================================        |  88%  |                                                                              |==============================================================        |  89%  |                                                                              |===============================================================       |  89%  |                                                                              |===============================================================       |  90%  |                                                                              |===============================================================       |  91%  |                                                                              |================================================================      |  91%  |                                                                              |================================================================      |  92%  |                                                                              |=================================================================     |  92%  |                                                                              |=================================================================     |  93%  |                                                                              |==================================================================    |  94%  |                                                                              |==================================================================    |  95%  |                                                                              |===================================================================   |  95%  |                                                                              |===================================================================   |  96%  |                                                                              |====================================================================  |  96%  |                                                                              |====================================================================  |  97%  |                                                                              |====================================================================  |  98%  |                                                                              |===================================================================== |  98%  |                                                                              |===================================================================== |  99%  |                                                                              |======================================================================|  99%  |                                                                              |======================================================================| 100%
-> state_tigris = tigris::states(class = 'sf',year = '2017')
-  |                                                                              |                                                                      |   0%  |                                                                              |                                                                      |   1%  |                                                                              |=                                                                     |   1%  |                                                                              |=                                                                     |   2%  |                                                                              |==                                                                    |   2%  |                                                                              |==                                                                    |   3%  |                                                                              |====                                                                  |   6%  |                                                                              |=====                                                                 |   7%  |                                                                              |======                                                                |   9%  |                                                                              |========                                                              |  11%  |                                                                              |========                                                              |  12%  |                                                                              |=========                                                             |  13%  |                                                                              |==========                                                            |  14%  |                                                                              |===========                                                           |  15%  |                                                                              |===========                                                           |  16%  |                                                                              |============                                                          |  17%  |                                                                              |============                                                          |  18%  |                                                                              |=============                                                         |  19%  |                                                                              |==============                                                        |  20%  |                                                                              |===============                                                       |  21%  |                                                                              |================                                                      |  23%  |                                                                              |=================                                                     |  25%  |                                                                              |==================                                                    |  26%  |                                                                              |===================                                                   |  26%  |                                                                              |===================                                                   |  28%  |                                                                              |====================                                                  |  28%  |                                                                              |======================                                                |  31%  |                                                                              |======================                                                |  32%  |                                                                              |=======================                                               |  32%  |                                                                              |=======================                                               |  33%  |                                                                              |========================                                              |  34%  |                                                                              |========================                                              |  35%  |                                                                              |=========================                                             |  35%  |                                                                              |==========================                                            |  37%  |                                                                              |==========================                                            |  38%  |                                                                              |===========================                                           |  38%  |                                                                              |===========================                                           |  39%  |                                                                              |============================                                          |  40%  |                                                                              |=============================                                         |  42%  |                                                                              |==============================                                        |  42%  |                                                                              |==============================                                        |  43%  |                                                                              |==============================                                        |  44%  |                                                                              |===============================                                       |  44%  |                                                                              |===============================                                       |  45%  |                                                                              |================================                                      |  45%  |                                                                              |================================                                      |  46%  |                                                                              |=================================                                     |  47%  |                                                                              |==================================                                    |  48%  |                                                                              |==================================                                    |  49%  |                                                                              |===================================                                   |  49%  |                                                                              |===================================                                   |  50%  |                                                                              |====================================                                  |  51%  |                                                                              |====================================                                  |  52%  |                                                                              |=====================================                                 |  52%  |                                                                              |=====================================                                 |  53%  |                                                                              |======================================                                |  54%  |                                                                              |=======================================                               |  55%  |                                                                              |=======================================                               |  56%  |                                                                              |========================================                              |  57%  |                                                                              |=========================================                             |  58%  |                                                                              |=========================================                             |  59%  |                                                                              |==========================================                            |  59%  |                                                                              |==========================================                            |  60%  |                                                                              |===========================================                           |  62%  |                                                                              |============================================                          |  62%  |                                                                              |============================================                          |  63%  |                                                                              |=============================================                         |  64%  |                                                                              |==============================================                        |  65%  |                                                                              |===============================================                       |  67%  |                                                                              |===============================================                       |  68%  |                                                                              |================================================                      |  68%  |                                                                              |================================================                      |  69%  |                                                                              |=================================================                     |  70%  |                                                                              |=================================================                     |  71%  |                                                                              |==================================================                    |  72%  |                                                                              |===================================================                   |  72%  |                                                                              |===================================================                   |  74%  |                                                                              |====================================================                  |  74%  |                                                                              |====================================================                  |  75%  |                                                                              |=====================================================                 |  75%  |                                                                              |=====================================================                 |  76%  |                                                                              |======================================================                |  78%  |                                                                              |=======================================================               |  79%  |                                                                              |========================================================              |  80%  |                                                                              |=========================================================             |  81%  |                                                                              |=========================================================             |  82%  |                                                                              |==========================================================            |  83%  |                                                                              |===========================================================           |  85%  |                                                                              |============================================================          |  86%  |                                                                              |=============================================================         |  87%  |                                                                              |=============================================================         |  88%  |                                                                              |==============================================================        |  88%  |                                                                              |==============================================================        |  89%  |                                                                              |===============================================================       |  90%  |                                                                              |================================================================      |  92%  |                                                                              |=================================================================     |  93%  |                                                                              |==================================================================    |  94%  |                                                                              |===================================================================   |  95%  |                                                                              |===================================================================   |  96%  |                                                                              |====================================================================  |  97%  |                                                                              |===================================================================== |  99%  |                                                                              |======================================================================| 100%
-> county_tigris$STATE_NAME = state_tigris$NAME[match(county_tigris$STATEFP,state_tigris$STATEFP)]
-> county_tigris$NAME = ifelse(county_tigris$NAME != county_tigris$STATE_NAME,county_tigris$NAME,paste(county_tigris$NAME,'County'))
-> 
-> clusterEvalQ(cl,{require(spacyr);require(data.table);require(stringr);
-+   model = 'en_core_web_sm'
-+   spacyr::spacy_initialize(model)
-+   #text_storage = 'input/filtered_text_files/'
-+   #ent_loc = 'scratch/boilerplate/project_place_entiities/'
-+ })
-[[1]]
-NULL
-
-[[2]]
-NULL
-
-[[3]]
-NULL
-
-[[4]]
-NULL
-
-[[5]]
-NULL
-
-[[6]]
-NULL
-
-[[7]]
-NULL
-
-[[8]]
-NULL
-
-[[9]]
-NULL
-
-[[10]]
-NULL
-
-[[11]]
-NULL
-
-[[12]]
-NULL
-
-[[13]]
-NULL
-
-[[14]]
-NULL
-
-[[15]]
-NULL
-
-[[16]]
-NULL
-
-[[17]]
-NULL
-
-[[18]]
-NULL
-
-[[19]]
-NULL
-
-[[20]]
-NULL
-
-[[21]]
-NULL
-
-[[22]]
-NULL
-
-[[23]]
-NULL
-
-[[24]]
-NULL
-
-[[25]]
-NULL
-
-[[26]]
-NULL
-
-[[27]]
-NULL
-
-[[28]]
-NULL
-
-[[29]]
-NULL
-
-[[30]]
-NULL
-
-[[31]]
-NULL
-
-[[32]]
-NULL
-
-[[33]]
-NULL
-
-[[34]]
-NULL
-
-[[35]]
-NULL
-
-[[36]]
-NULL
-
-[[37]]
-NULL
-
-[[38]]
-NULL
-
-[[39]]
-NULL
-
-[[40]]
-NULL
-
-[[41]]
-NULL
-
-[[42]]
-NULL
-
-[[43]]
-NULL
-
-[[44]]
-NULL
-
-[[45]]
-NULL
-
-[[46]]
-NULL
-
-[[47]]
-NULL
-
-[[48]]
-NULL
-
-[[49]]
-NULL
-
-[[50]]
-NULL
-
-[[51]]
-NULL
-
-[[52]]
-NULL
-
-[[53]]
-NULL
-
-[[54]]
-NULL
-
-[[55]]
-NULL
-
-[[56]]
-NULL
-
-[[57]]
-NULL
-
-[[58]]
-NULL
-
-[[59]]
-NULL
-
-[[60]]
-NULL
-
-[[61]]
-NULL
-
-[[62]]
-NULL
-
-[[63]]
-NULL
-
-[[64]]
-NULL
-
-[[65]]
-NULL
-
-[[66]]
-NULL
-
-[[67]]
-NULL
-
-[[68]]
-NULL
-
-[[69]]
-NULL
-
-[[70]]
-NULL
-
-[[71]]
-NULL
-
-[[72]]
-NULL
-
-[[73]]
-NULL
-
-[[74]]
-NULL
-
-[[75]]
-NULL
-
-[[76]]
-NULL
-
-[[77]]
-NULL
-
-[[78]]
-NULL
-
-[[79]]
-NULL
-
-[[80]]
-NULL
-
-[[81]]
-NULL
-
-[[82]]
-NULL
-
-[[83]]
-NULL
-
-[[84]]
-NULL
-
-[[85]]
-NULL
-
-[[86]]
-NULL
-
-> gc()
-            used   (Mb) gc trigger   (Mb)  max used   (Mb)
-Ncells   3891260  207.9    6909308  369.0   5422605  289.6
-Vcells 562489142 4291.5  846801092 6460.6 582864153 4447.0
-> 
-> ngaz = fread('../bucket_mount/tuolumne/scratch/NationalFile_20191101.txt',sep = '|',fill = T,stringsAsFactors = F,quote = "")
-> ngaz$CFIPS = ifelse(!is.na(ngaz$COUNTY_NUMERIC),paste0(formatC(ngaz$STATE_NUMERIC,width = 2,flag = '0'),formatC(ngaz$COUNTY_NUMERIC,width = 3,flag = '0')),NA)
-> ngaz = ngaz[!ngaz$FEATURE_NAME %in% c('Pacific Ocean','South Pacific Ocean','Atlantic Ocean','Gulf of Mexico','Caribbean Sea'),]
-> ngaz = ngaz[!is.na(ngaz$FEATURE_CLASS),]
-> ngaz = ngaz[ngaz$STATE_ALPHA %in% c(state.abb,'DC','PR'),]
-> ngaz = ngaz[!is.na(ngaz$COUNTY_NUMERIC),]
-> drop_types = c('Tower')
-> ngaz = ngaz[!ngaz$FEATURE_CLASS %in% drop_types,]
-> ngaz$COUNTY_NAME = county_tigris$NAME[match(ngaz$CFIPS,county_tigris$GEOID)]
-> ngaz = ngaz[ngaz$CFIPS%in% county_tigris$GEOID,]
-> ngaz$STATE_NAME = state_tigris$NAME[match(ngaz$STATE_ALPHA,state_tigris$STUSPS)]
-> ngaz = ngaz[ngaz$STATE_NAME != ngaz$FEATURE_NAME,]
-> ngaz = ngaz[!ngaz$FEATURE_NAME %in% c('River','Wilderness','Forest','Lake','Field','Beach','Mountain','Pacific','Atlantic','Earth','Acres','North','South','East','West',state.name),]
-> gc()
-            used   (Mb) gc trigger   (Mb)   max used   (Mb)
-Ncells   5637022  301.1   14181652  757.4   10424599  556.8
-Vcells 625031065 4768.7 1016241310 7753.4 1016065307 7752.0
-> ngaz$FEATURE_NAME2 = str_replace_all(ngaz$FEATURE_NAME,pattern = '\\s','_')
+> text_loc = 'climate_in_eis_project/input/'
+> flist = list.files(text_loc,pattern = 'corpus')
 > 
 > 
+> dir.create('climate_in_eis_project/scratch')
+Warning message:
+In dir.create("climate_in_eis_project/scratch") :
+  'climate_in_eis_project/scratch' already exists
+> storage = 'climate_in_eis_project/yearly_quanteda_tokens/'
+> dir.create(storage)
+Warning message:
+In dir.create(storage) :
+  'climate_in_eis_project/yearly_quanteda_tokens' already exists
+> cities = str_remove(maps::us.cities$name,'\\s[A-Z]{2}$')
+> counties = str_to_title(str_remove(maps::county.fips$polyname,'^.*\\,'))
+> wiki_landforms = 'https://en.wikipedia.org/wiki/List_of_landforms'
+> landforms = read_html(wiki_landforms) %>% html_nodes('.column-width a') %>% html_text() %>% str_to_title(.)
 > 
-> fls = unique(top40pages$File)
-> geo_file = '../bucket_mount/tuolumne/scratch/boilerplate/geo_temp.rds'
-> if(file.exists(geo_file)){existing_geo = readRDS(geo_file)}else{existing_geo = NULL}
-> fls = fls[!fls %in% existing_geo$FILE]
-> text_sets = split(top40pages$text,top40pages$File)
+> wiki_agencies = 'https://en.wikipedia.org/wiki/List_of_federal_agencies_in_the_United_States'
+> agencies_css = 'li , li a'
+> agencies = read_html(wiki_agencies ) %>% html_nodes(agencies_css) %>% html_text() 
+> agencies = str_remove(unlist(str_split(agencies,'\\s\\(|\\n')),'\\).*')
+> agencies = agencies[nchar(agencies)<100]
+> agencies = agencies[!duplicated(agencies)]
 > 
-> fips_matches = foreach(i = text_sets,f = fls) %dopar% {
-+   id = str_remove(f,'_.*')
-+   text = i
-+   pars = spacy_parse(text,entity = T,dependency = T,full_parse = TRUE,lemma = F,pos = F,nounphrase = T)
-+   ents = entity_consolidate(pars)
-+   filter_ents = ents[ents$entity_type%in%c('GPE','LOC',"FAC"),]
-+   if(nrow(filter_ents)>0){filter_ents$PROJECT_ID = id;filter_ents$FILE = f}
-+   filter_ents
+> agency_pages = read_html('https://www.usa.gov/federal-agencies') %>% html_nodes('.group a') %>% html_attr('href')
+> letter_pages = paste0('https://www.usa.gov',c(gsub('b#','a#',agency_pages[1],fixed = T),agency_pages))
+> agency_lists = lapply(letter_pages, function(x) x %>% read_html() %>% html_nodes('.one_column_bullet .url') %>% html_text(trim = T))
+> agency_set = gsub('\\s\\(.*','',unlist(agency_lists))
+> 
+> special_stopwords = c(cities,counties,state.name,agency_set)
+> stopword_breaks = paste0('\\b',special_stopwords,'\\b')
+> stopword_splits = split(stopword_breaks,dplyr::ntile(stopword_breaks,n = 40))
+> stopword_splits <- lapply(stopword_splits,paste,collapse = '|')
+> replace_toks = F
+> for(corpus_name in flist){
++   corp_file = paste0(storage,'tokens_',year,'.RDS')
++   year <- str_extract(corp_file,'[0-9]{4}')
++   if(!file.exists(corp_file)|replace_toks){
++   print(corpus_name)
++   temp = readRDS(paste0(text_loc,corpus_name))
++   clean_temp = FindCleanPages(temp)
++   page_list = vector()
++   
++   pages = clean_temp$text
++   
++   ##### this isn't something that should be parallelized (I think) because editing simultaneously poses some aggregation issues
++   for(i in 1:length(stopword_splits)){
++     print(i)
++     pages = str_remove_all(pages,pattern = stopword_splits[[i]])
++   }
++   
++   
++   pages = tolower(pages)
++   pages = removePunctuation(pages)
++   pages = removeNumbers(pages)
++   
++   clean_temp$text <- pages
++   
++   corp = corpus(clean_temp$text,docnames = clean_temp$File,docvars = clean_temp[,.(File,Page)],unique_docnames = F)
++   
++   toks = tokens(corp,remove_symbols = T,split_hyphens = F,padding = F,remove_url = T)
++   toks = tokens_select(toks,pattern = stopwords("en"),selection = 'remove')
++   compound_words = c("greenhouse gas*",'climate change*','global warming','carbon emission*','climate impact*','ocean acidification*',
++                      'alternative energy','anthropogenic emissions','carbon dioxide','extreme weather','storm surge',
++                      'adaptive capacity','adaptation costs','renewable energy','sea level rise',
++                      'sealevel rise','air quality','water quality','invasive species','land use',
++                      'environmental impact statement*')
++   toks = tokens_select(toks,min_nchar = 3,max_nchar = max(nchar(compound_words)))
++   toks = tokens_compound(toks,pattern = phrase(compound_words))
++   saveRDS(toks,paste0(storage,'tokens_',year,'.RDS'))
++   }
 + }
+Error in paste0(storage, "tokens_", year, ".RDS") : 
+  cannot coerce type 'closure' to vector of type 'character'
+Execution halted
