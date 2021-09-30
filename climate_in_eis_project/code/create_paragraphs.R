@@ -4,10 +4,13 @@ sapply(packs[!sapply(packs,require,character.only = T)],install.packages)
 sapply(packs,require)
 
 redraw_corpus = TRUE
-projs = readRDS('scratch/climate_in_nepa/eis_metadata.RDS')
-docs = readRDS('scratch/climate_in_nepa/eis_doc_metadata.RDS')
+proj.dir = 'climate_in_eis_project/'
+scratch.dir = 'data_products/'
+projs = readRDS(paste0(proj.dir,scratch.dir,'eis_metadata.RDS'))
+docs = readRDS(paste0(proj.dir,scratch.dir,'eis_doc_metadata.RDS'))
 
-text_loc = 'scratch/full_text_documents/'
+text_loc = paste0(proj.dir,'input/eis_corpus_2013-2020.rds')
+
 fl = list.files(text_loc,full.names = T)
 sizes = file.size(fl)
 file.remove(fl[sizes==0])

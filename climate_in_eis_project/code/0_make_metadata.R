@@ -1,6 +1,8 @@
 require(data.table)
 require(stringr)
-epa = fread('../eis_documents/enepa_repository/meta_data/eis_record_detail.csv')
+proj.dir = 'climate_in_eis_project/'
+
+epa = fread(paste0(proj.dir,'input/eis_record_detail.csv'))
 epa = epa[Document=='Draft',]
 #epa = epa[Agency=='Bureau of Land Management',]
 
@@ -38,9 +40,9 @@ epa$Agency[epa$Agency%in%c('Department of Health and Human Services','Food and D
 epa = epa[Agency %in% epa[,.N,Agency][order(N),][N>=5,]$Agency,]
 
 
-doc_url = '../eis_documents/enepa_repository/meta_data/eis_document_record.csv'
+doc_url = paste0(proj.dir,'input/eis_document_record.csv')
 epa_docs = fread(doc_url)
-doc_url2 = '../eis_documents/enepa_repository/meta_data/extra_docs.csv'
+doc_url2 = paste0(proj.dir,'input/extra_docs.csv')
 epa_docs2 = fread(doc_url2)
 epa_docs = rbindlist(list(epa_docs,epa_docs2),fill=T)
 epa_docs = epa_docs[EIS.Number %in% epa$EIS.Number,]
@@ -70,8 +72,8 @@ epa_docs$PROJECT_ID = epa_docs$EIS.Number
 epa_docs$FILE_NAME = paste0(epa_docs$PROJECT_ID,'--',gsub('\\.PDF$|\\.pdf$','.txt',epa_docs$File_Name))
 
 
-saveRDS(epa,'scratch/climate_in_nepa/eis_metadata.RDS')
-saveRDS(epa_docs,'scratch/climate_in_nepa/eis_doc_metadata.RDS')
+saveRDS(epa,paste0(proj.dir,'data_products/eis_metadata.RDS'))
+saveRDS(epa_docs,paste0(proj.dir,'data_products/eis_doc_metadata.RDS'))
 
 library(htmlTable)
 

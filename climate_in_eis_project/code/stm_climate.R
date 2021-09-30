@@ -1,15 +1,14 @@
 
-
-library(devtools)
-install_github("bstewart/stm",dependencies=TRUE)
+require(remotes)
+remotes::install_github("bstewart/stm",dependencies=TRUE)
 require(stm)
 require(data.table)
 require(stringr)
-eis_record = fread('../eis_documents/enepa_repository/meta_data/eis_record_detail.csv')
+eis_record = fread('climate_in_eis_project/data_products/eis_metadata_with_covariates.RDS')
 
-
-dir.create('scratch/climate_in_nepa/eis_climate_hash/')
-scratch_loc = 'scratch/climate_in_nepa/eis_climate_hash/'
+hash_dir = 'climate_in_eis_project/data_products/eis_climate_hash/'
+dir.create(hash_dir)
+scratch_loc = hash_dir
 
 segment_lists = lapply(2013:2020,function(year) readRDS(paste0('scratch/climate_in_nepa/climate_segments/temp_segments_',year,'.rds')))
 segment_vector = unlist(segment_lists)
