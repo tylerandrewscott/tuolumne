@@ -5,15 +5,19 @@ need = pack[!pack %in% installed.packages()[,'Package']]
 lapply(need,install.packages)
 lapply(pack,require,character.only=T)
 
+
+#### check for necessary input data and download from DataDryad if not found ####
+  ##### NOTE THIS TAKES A WHILE -- 1.9GB CORPUS FILE WILL NEED TO DOWNLOAD IF NOT FOUND -- 
+
+source('boilerplate_project/code/functions/getInputData.R')
+
+
 empty_project_record = data.table(PROJECT_ID = character(),YEAR = numeric(),PROJECT_TYPE = character(),AGENCY = character())
 empty_doc_dt = data.table(YEAR = numeric(),FILE_NAME = character(), FILE_LOC = character(), PROJECT_TYPE = character(),AGENCY = character())
 
 ###############
 ###############
 
-
-require(data.table)
-require(stringr)
 epa = fread('boilerplate_project/input/eis_record_detail.csv')
 #epa = epa[Agency=='Forest Service',]
 
@@ -93,10 +97,11 @@ epa_docs$AGENCY = epa$AGENCY[match(epa_docs$EIS.Number,epa$EIS.Number)]
 epa$PROJECT_ID = epa$EIS.Number
 
 epa_docs$PROJECT_ID = epa_docs$EIS.Number
-text_flist = list.files('../eis_documents/enepa_repository/text_as_datatable/',recursive = T)
+text_meta = readRDS('boilerplate_project/input/eis_corpus_2013-2020.rds')
+#text_flist = list.files('../eis_documents/enepa_repository/text_as_datatable/',recursive = T)
 
 
-ex = gsub('pdf$|PDF$','txt',epa_docs$File_Name) %in% basename(text_flist)
+ex = gsub('pdf$|PDF$','txt',epa_docs$File_Name) %in% basename(unique(text_meta$File))
 
 epa_sub_docs = epa_docs[ex,]
 epa_sub = epa
@@ -115,6 +120,5 @@ documents = documents[!{grepl('\\(',documents$FILE_NAME) &!grepl('\\)',documents
 fwrite(projects,file = 'boilerplate_project/data_products/project_candidates_eis_only.csv')
 fwrite(documents,file = 'boilerplate_project/data_products/document_candidates_eis_only.csv')
 
-
-#htmlTable(projects[,list(sum(PROJECT_ID %in% documents$PROJECT_ID|MASTER_ID %in% documents$PROJECT_ID),.N),by = .(AGENCY,PROJECT_TYPE)][order(-N)])
+htmlTable::htmlTable(projects[,list(sum(PROJECT_ID %in% documents$PROJECT_ID|PROJECT_ID %in% documents$PROJECT_ID),.N),by = .(AGENCY)][order(-N)])
 

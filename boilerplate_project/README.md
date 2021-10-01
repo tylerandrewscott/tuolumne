@@ -30,7 +30,7 @@ The subdirectory has 4 folders:
 
 This is an RDS compressed data.table object (https://cran.r-project.org/web/packages/data.table/) in which each page is a row. The data.table has three columns, showing the File, text, and page #.
 
-2. eis_documents_record.csv
+2. eis_document_record.csv
 
 This CSV file itemizes documents in the e-nepa database (https://cdxnodengn.epa.gov/cdx-enepa-public/action/eis/search) by row, and provides meta-data for each document. Projects and documents are linked by EIS Number (an 8-digit identifier in which the first four digits show the year of publication). Every file (document) is saved with the EIS Number appended to the front of the file name, followed by an underscore, and then the original file name as downloaded from the EPA website.
 

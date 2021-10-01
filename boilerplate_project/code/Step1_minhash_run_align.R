@@ -1,42 +1,23 @@
-# library(tm)
-# library(quanteda)
-# library(data.table)
-# library(textclean)
-# library(stringr)
-# library(textmineR)
-# library(stm)
-# library(textmineR)
-# library(textreuse)
-# library(text2vec)
-# library(pbapply)
-#setwd('bucket_mount/tuolumne/')
 
-rerun_existing = T
-if(!require(data.table)){install.packages('data.table');require(data.table)}
-if(!require(tm)){install.packages('tm');require(tm)}
-if(!require(quanteda)){install.packages('quanteda');require(quanteda)}
-if(!require(textclean)){install.packages('textclean');require(textclean)}
-if(!require(stringr)){install.packages('stringr');require(stringr)}
-if(!require(pbapply)){install.packages('pbapply');require(pbapply)}
-if(!require(parallel)){install.packages('parallel');require(parallel)}
-if(!require(doParallel)){install.packages('doParallel');require(doParallel)}
-if(!require(textreuse)){install.packages('textreuse');require(textreuse)}
-if(!require(tidyverse)){install.packages('tidyverse');require(tidyverse)}
-if(!require(benchmarkme)){install.packages('benchmarkme');require(benchmarkme)}
-#setwd("google_drive/tuolumne/")
-#setDTthreads(3)
-#getDTthreads()
+where = 'local'# or "remote"
+rerun_existing = F
+
+pack = c('data.table','data.table','quanteda','tm','textclean','stringr','pbapply',
+         'stringr','parallel','doParallel','benchmarkme','tidyverse','textreuse')
+need = pack[!pack %in% installed.packages()[,'Package']]
+lapply(need,install.packages)
+lapply(pack,require,character.only=T)
+
 cores = detectCores()
-mcores = floor(detectCores()-5)
-options("mc.cores" = floor(detectCores() -5))
+mcores = floor(detectCores()-2)
+options("mc.cores" = floor(detectCores() -2))
 
 #table(projects$AGENCY,projects$PROJECT_TYPE)
 projects = fread('boilerplate_project/data_products/project_candidates_eis_only.csv')
-projects = projects[Document=='Final',]
-projects = projects[grepl('^201[3-9]|^2020',PROJECT_ID),]
 
-
-scratch_loc = '../bucket_mount/tuolumne/scratch/boilerplate/hash_candidates/'
+dir.create('boilerplate_project/scratch/hash_candidates/')
+if(where=='local'){scratch_loc = 'boilerplate_project/scratch/hash_candidates/'}
+if(where == 'remote'){scratch_loc = '../bucket_mount/tuolumne/scratch/boilerplate/hash_candidates/'}
 
 minhash <- minhash_generator(n = 240, seed = 40)
 progress_bars = T
@@ -46,10 +27,11 @@ registerDoParallel(cl = cluster,cores = mcores)
 parallel::clusterEvalQ(cluster,'require(data.table)')
 parallel::clusterEvalQ(cluster,'require(textreuse)')
 #hash_file = paste0('../bucket_mount/big_eis_text.rds')
-full_tlist <- readRDS('../bucket_mount/tuolumne/scratch/boilerplate/big_text_files/big_eis_text.rds')
 
+full_tlist <- readRDS('boilerplate_project/input/eis_corpus_2013-2020.rds')
 
 full_tlist$text = gsub('\"\"','',full_tlist$text,fixed = T)
+
 chars = nchar(full_tlist$text)
 periods = stringr::str_count(full_tlist$text,"\\.")
 numbers = stringr::str_count(full_tlist$text,"[0-9]")
@@ -76,7 +58,7 @@ summary(nchar(full_tlist$text))
  gc()
 #saveRDS(eis_corpus,'../bucket_mount/tuolumne/scratch/eis_page_corp_scratch.rds')
 
- 
+
 #eis_corpus = readRDS('../bucket_mount/tuolumne/scratch/eis_page_corp_scratch.rds')
 #file.exists('../bucket_mount/tuolumne/scratch/eis_page_corp_scratch.rds')
 split_corpus_ntiles = dplyr::ntile(x = seq(eis_corpus),n = mcores*10)
@@ -85,7 +67,7 @@ rm(eis_corpus)
 gc()
 split_buckets = foreach(x = split_corpus) %dopar% {textreuse::lsh(x,bands = 60)}
 gc()
-# 
+# ``
 while(any(sapply(split_buckets,is.null))){
    null_fails = which(sapply(split_buckets,is.null))
    split_buckets[null_fails] <- pblapply(null_fails,function(x) lsh(split_corpus[[x]],bands = 60,progress = F),cl = 5)
