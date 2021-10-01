@@ -6,6 +6,7 @@ library(tidyverse)
 projects = fread('boilerplate_project/data_products/project_candidates_eis_only.csv')
 documents = fread('boilerplate_project/data_products/document_candidates_eis_only.csv')
 
+
 flist = list.files('../eis_documents/enepa_repository/text_as_datatable/',recursive = T,full.names = T)
 
 
@@ -14,6 +15,9 @@ base.file = basename(flist)
 
 eis_docs = documents
 eis_docs$FILE_LOC <- dirname(flist)[match(gsub('pdf$','txt',eis_docs$FILE_NAME),base.file)]
+
+
+
 
 
 #eis_docs[!file.exists(paste('../eis_documents/',eis_docs$FILE_LOC,eis_docs$FILE_NAME,sep = '/')),]
