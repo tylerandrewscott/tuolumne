@@ -1,6 +1,6 @@
 
 
-pack = c('data.table','stringr','tidyverse','doParallel','pdftools','lubridate')
+pack = c('data.table','stringr','tidyverse','doParallel','pdftools','lubridate','htmlTable')
 need = pack[!pack %in% installed.packages()[,'Package']]
 lapply(need,install.packages)
 lapply(pack,require,character.only=T)
