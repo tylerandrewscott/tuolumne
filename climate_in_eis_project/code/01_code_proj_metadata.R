@@ -1,6 +1,7 @@
 
 require(data.table)
 require(tidyverse)
+require(ggrepel)
 proj.dir = 'climate_in_eis_project/'
 scratch_loc = paste0(proj.dir,'data_products/')
 projs = readRDS(paste0(scratch_loc,'eis_metadata.RDS'))
@@ -12,7 +13,7 @@ projs$PROJECT_TYPE[grepl('License|Permit|Exchange|Lease\\b|Leasing\\b|Acquisitio
 projs$PROJECT_TYPE[grepl('Programmatic|PROGRAMMATIC|Regulation|Rule\\b|Standards\\b|Designation\\b|National Marine Sanctuary|Focal Areas Withdrawal|Rulemaking|A National Approach|Issuing Annual Catch Limits|Determination|Amendment|Enhancing Protections|Generic\\b|Areas and Boundaries|Reduce the Incidental Bycatch',projs$Title, perl = T)]<-'Rule/Program'
 projs$PROJECT_TYPE[projs$Title %in% c('Starry Goat','Ragged Ruby',"Flat Country","Gold Butterfly","Trout Creek" )]<- 'Direct Action/Operations'
 
-
+projs = projs[!duplicated(EIS.Number),]
 projs$PROJECT_TOPIC <- NA
 projs$PROJECT_TOPIC[grepl('Solar|Wind|Transmission|Hydropower|Renewable|Hydroelectric|Nuclear.*Licenses|Engineered High Energy Crop Programs|Renewal of Nuclear Plants|Hawaii Clean Energy|Construct Power Line Replacement|Electrical Line Upgrade|West of Devers Upgrade Project|Electric Station|San Juan Basin Energy Connect Project|Pumped Storage|Yuba River Development Project|Energy Storage Project|License Renewal of Nuclear Plants|Nuclear Power|Test Reactor',projs$Title)] <- 'Electric Generation/Transmission'
 projs$PROJECT_TOPIC[grepl('Oil|Gas|LNG|Pipeline|Keystone XL|Nanushuk Project|Coal Combustion|Fossil Plant|Millennium Bulk Terminals-Longview|Ash Impoundment|FutureGen 2.0 Project|Carbon Capture and Sequestration Project|Liquefaction|Delivery Lateral|Riley Ridge to Natrona Project|Willow Master Development|Bull Mountain Unit Master Development Plan|National Petroleum Reserve|Calcasieu Pass|Mountain Valley Project|Jordan Cove|Gulf XPress|Atlantic Sunrise|Southgate Project|Rayne Xpress|Algonquin Incremental Market Project|Northeast Supply Enhancement Project',projs$Title)|grepl('Ocean Energy',projs$Lead.Agency)] <- 'Fossil Fuels'
@@ -61,7 +62,48 @@ subs = str_split(ideol$epaStandIn,', ')
 projs$index = match(projs$Lead.Agency,ideol$epaName)
 projs = data.table(projs,ideol[unlist(sapply(projs$Lead.Agency,function(x) c(grep(x,ideol$epaName),grep(x,ideol$epaStandIn)))),])
 
+projs = data.table(left_join(projs,projs[,list(mean(skills_rating),mean(ideo_rating)),by=.(AGENCY)]))
+projs$DEC_DATE = decimal_date(mdy(projs$Federal.Register.Date))-2013
+
+projs$ABBREV[projs$AGENCY=='Nuclear Regulatory Commission'] <- 'NRC'
+projs$ABBREV[projs$AGENCY=='Department of Defense'] <- 'DoD'
+projs$ABBREV[projs$AGENCY=='Department of Commerce'] <- 'DoC'
+projs$ABBREV[projs$AGENCY=='Bureau of Indian Affairs'] <- 'BIA'
+projs$ABBREV[projs$AGENCY=='Department of Housing and Urban Development'] <- 'HUD'
+projs$ABBREV[projs$AGENCY=='U.S. Army Corps of Engineers'] <- 'ACOE'
+projs$ABBREV[projs$AGENCY=='Federal Highway Administration'] <- 'FHWA'
+projs$ABBREV[projs$AGENCY=='Federal Energy Regulatory Commission'] <- 'FERC'
+projs$ABBREV[projs$AGENCY=='General Services Administration'] <- 'GSA'
+projs$ABBREV[projs$AGENCY=='Department of Health and Human Services'] <- 'HHS'
+projs$ABBREV[projs$AGENCY=='Department of Homeland Security'] <- 'DHS'
+projs$ABBREV[projs$AGENCY=="Fish and Wildlife Service"  ] <- 'FWS'
+projs$ABBREV[projs$AGENCY=="National Park Service"  ] <- 'NPS'
+projs$ABBREV[projs$AGENCY=="Forest Service"  ] <- 'FS'
+projs$ABBREV[projs$AGENCY=="Bureau of Reclamation" ] <- 'BR'
+projs$ABBREV[projs$AGENCY=="Department of Interior (other)" ] <- 'DoI (other)'
+projs$ABBREV[projs$AGENCY=="USDA (non-FS)" ] <- 'DoA (other)'
+projs$ABBREV[projs$AGENCY=="Department of Transportation (other)" ] <- 'DoT (other)'
+projs$ABBREV[projs$AGENCY=="Tennessee Valley Authority"  ] <- 'TVA'
+projs$ABBREV[projs$AGENCY=="Bureau of Land Management" ] <- 'BLM'
+projs$ABBREV[projs$AGENCY=="Department of Energy" ] <- 'DoE'
+projs$ABBREV[projs$AGENCY== "National Oceanic and Atmospheric Administration"  ] <- 'NOAA'
+
+
 projs[is.na(PROJECT_TOPIC),]
+
+
+figure1 = ggplot(projs[!duplicated(AGENCY),]) + 
+  geom_hline(yintercept = projs[ABBREV=='TVA']$V2[1],lty=2)+
+  geom_label(x = -1,y = projs[ABBREV=='TVA']$V2[1],label='TVA')+
+  geom_point(aes(x = ideo_rating,y = skills_rating)) + 
+  geom_text_repel(aes(x = ideo_rating,y = skills_rating,label = ABBREV)) + 
+  theme_bw() + xlab('Ideological rating (liberal < conservative)') + ylab('Workforce skill (less < more)') + 
+  ggtitle('Ideology and workforce skill by agency','(using Richardson et al. 2018 scores)') +
+  labs(caption = "*TVA missing ideology score")
+
+dir.create('climate_in_eis_project/output/')
+ggsave(plot = figure1,filename = 'climate_in_eis_project/output/figure1.png',dpi = 350,width = 5,height = 4.5, units = 'in')
+
 saveRDS(projs,paste0(scratch_loc,'eis_metadata_with_covariates.RDS'))
 
 
