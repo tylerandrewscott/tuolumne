@@ -5,7 +5,6 @@ need = pack[!pack %in% installed.packages()[,'Package']]
 lapply(need,install.packages)
 lapply(pack,require,character.only=T)
 
-
 #### check for necessary input data and download from DataDryad if not found ####
   ##### NOTE THIS TAKES A WHILE -- 1.9GB CORPUS FILE WILL NEED TO DOWNLOAD IF NOT FOUND -- 
 

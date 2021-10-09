@@ -7,7 +7,7 @@ where = 'remote'# or "remote"
 rerun_existing = F
 
 pack = c('data.table','data.table','quanteda','tm','textclean','stringr','pbapply',
-         'stringr','parallel','doParallel','benchmarkme','tidyverse','textreuse')
+         'stringr','parallel','doParallel','benchmarkme','tidyverse','textreuse','dplyr')
 need = pack[!pack %in% installed.packages()[,'Package']]
 lapply(need,install.packages)
 lapply(pack,require,character.only=T)
@@ -111,6 +111,14 @@ stopCluster(cluster)
 gc()
 
 score_dt = rbindlist(score_list)
+score_dt <- score_dt[score>=300,]
 
-saveRDS(score_dt,'boilerplate_project/data_products/eis_page_scores_scratch.rds')
+dir.create('boilerplate_project/data_products/score_results/')
+####### this isn' awesome solution, but allows the files to be small enough to sync in normal github
+cuts = ceiling(nrow(score_dt) / 5e6)
+cut_index = dplyr::ntile(1:nrow(score_dt),n = cuts)
+
+lapply(1:cuts,function(cut) {
+  saveRDS(score_dt[cut_index==cut,],paste0("boilerplate_project/data_products/score_results/eis_page_scores_scratch_file_",cut,".rds"),compress = TRUE)
+})
 

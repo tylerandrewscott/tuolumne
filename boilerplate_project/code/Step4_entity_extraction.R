@@ -1,13 +1,9 @@
-if(!require(readtext)){install.packages('readtext');require(readtext)}
-if(!require(tokenizers)){install.packages('tokenizers');require(tokenizers)}
-if(!require(pbapply)){install.packages('pbapply');require(pbapply)}
-if(!require(data.table)){install.packages('data.table');require(data.table)}
-if(!require(doParallel)){install.packages('doParallel');require(doParallel)}
-if(!require(stringr)){install.packages('stringr');require(stringr)}
-if(!require(tidyverse)){install.packages('tidyverse');require(tidyverse)}
-if(!require(pdftools)){install.packages('pdftools');require(pdftools)}
-if(!require(googleLanguageR)){install.packages('googleLanguageR')}
-if(!require(rvest)){install.packages('rvest')}
+pack = c('readtext','tokenizers','pbapply','data.table','doParallel','stringr','tidyverse','pdftools','googleLanguageR','rvest')
+need = pack[!pack %in% installed.packages()[,'Package']]
+lapply(need,install.packages)
+lapply(pack,require,character.only=T)
+
+
 #setwd('bucket_mount/tuolumne/')
 
 OVERWRITE = TRUE
@@ -26,15 +22,13 @@ text_storage = 'input/filtered_text_files/'
 flist = list.files(text_storage)
 projects_used = fread('boilerplate_project/data_products/project_candidates_eis_only.csv')
 files_used = fread('boilerplate_project/data_products/document_candidates_eis_only.csv')
-tlist = list.files('../eis_documents/enepa_repository/text_as_datatable/',full.names = T, recursive = T)
+flist = readRDS('boilerplate_project/input/eis_corpus_2013-2020.rds')
+#tlist = list.files('../eis_documents/enepa_repository/text_as_datatable/',full.names = T, recursive = T)
 #entity_file = 'scratch/boilerplate/entity_extraction_results.rds'
 #if(!file.exists(entity_file)){ents =list()}else{ents = readRDS(entity_file)}
 files_used$FILE_NAME <- str_replace(files_used$FILE_NAME,'\\.pdf$','\\.txt')
 #files_used = files_used[!FILE_NAME %in% ents$FILE_NAME,]
 keep_tlist = tlist[basename(tlist) %in% files_used$FILE_NAME]
-
-
-
 
 good_string = 'PREPARERS|CONTRIBUTORS|Preparers|Contributors|Consultants|Interdisciplinary Team'#LIST OF PREPARERS|List of Preparers|List Of Preparers|PREPARERS AND CONTRIBUTORS|Preparers and Contributors|Preparers \\& Contributors|Preparers And Contributors'
 bad_string = 'TABLE OF CONTENTS|Table of Contents|^CONTENTS|Contents|How to Use This Document|Date Received'
@@ -127,7 +121,7 @@ clusterEvalQ(cluster,googleLanguageR::gl_auth(json_file = account_key))
 
 #projects_used$EIS.Number[!projects_used$EIS.Number %in% str_remove(names(pages_by_file),'_.*')]
 
-dir.create('scratch/entity_results/')
+dir.create('boilerplate_project/data_products/')
 
 file_text = foreach(p =pages_by_file,f = names(pages_by_file),i = stringr::str_remove(names(pages_by_file),'_.*')) %dopar% {
   fl = basename(gsub('txt$','pdf',f))
