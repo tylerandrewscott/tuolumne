@@ -18,7 +18,7 @@ cors = detectCores() - 4
 cl = makeCluster(cors)
 registerDoParallel(cl)
 projects = fread('boilerplate_project/data_products/project_candidates_eis_only.csv')
-full_tlist <- readRDS('boilerplate_project/input/eis_corpus_2013-2020.rds')
+full_tlist <- readRDS('boilerplate_project/input/feis_corpus_2013-2020.rds')
 
 top40pages = full_tlist[Page %in% 1:50,]
 

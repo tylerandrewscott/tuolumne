@@ -27,30 +27,19 @@ gc()
 
 #hash_file = paste0('../bucket_mount/big_eis_text.rds')
 
-full_tlist <- readRDS('boilerplate_project/input/eis_corpus_2013-2020.rds')
+full_tlist <- readRDS('boilerplate_project/input/feis_corpus_2013-2020.rds')
 
+source('boilerplate_project/code/functions/cleanText.R')
 
-full_tlist[,text:=gsub('\"\"','',text,fixed = T)]
+full_tlist = cleanText(full_tlist)
+full_tlist$EIS.Number <- str_remove(full_tlistt$File,'_.*')
+full_tlist<- full_tlist[EIS.Number %in% projects$EIS.Number,]
 
-chars = nchar(full_tlist$text)
-periods = stringr::str_count(full_tlist$text,"\\.")
-numbers = stringr::str_count(full_tlist$text,"[0-9]")
-caps = stringr::str_count(full_tlist$text,'[A-Z]')
-tildes = stringr::str_count(full_tlist$text,'~')
-quotes = stringr::str_count(full_tlist$text,'\\"')
-spaces = stringr::str_count(full_tlist$text,'\\s')
-
-cut = 0.1
-full_tlist  = full_tlist[chars>400&{periods/chars}<cut&{quotes/chars}<cut&{tildes/chars}<cut&{numbers/chars}<cut&{caps/chars}<cut&{spaces/chars}<{cut*2},]
 
 #####
-
-
 hash_file = paste0(scratch_loc,'eis_page_hashes.rds')
 flist = as.character(full_tlist$text)
 names(flist) <- paste0(full_tlist$File,'_',full_tlist$Page)
-
-summary(nchar(full_tlist$text))
 gc()
 
 
@@ -114,11 +103,6 @@ score_dt = rbindlist(score_list)
 score_dt <- score_dt[score>=300,]
 
 dir.create('boilerplate_project/data_products/score_results/')
-####### this isn' awesome solution, but allows the files to be small enough to sync in normal github
-cuts = ceiling(nrow(score_dt) / 5e6)
-cut_index = dplyr::ntile(1:nrow(score_dt),n = cuts)
+saveRDS(score_dt,paste0("boilerplate_project/data_products/score_results/eis_page_scores_scratch_file.rds"),compress = TRUE)
 
-lapply(1:cuts,function(cut) {
-  saveRDS(score_dt[cut_index==cut,],paste0("boilerplate_project/data_products/score_results/eis_page_scores_scratch_file_",cut,".rds"),compress = TRUE)
-})
 

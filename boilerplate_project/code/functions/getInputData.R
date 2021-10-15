@@ -5,6 +5,7 @@ if(!require(p,character.only = T)){install.packages(p,type = 'source');require(p
 
 project_files = str_extract(grep('csv|rds',readLines('boilerplate_project/README.md'),value = T),'[a-z].*')
 project_files <- c(project_files,'README.md')
+
 if(all(project_files %in% list.files('boilerplate_project/input/'))){print('data are already stored locally')}else{
   url = 'https://datadryad.org/stash/dataset/doi:10.25338/B80K9R'
   file_nodes = read_html(url) %>% html_nodes(css = '.c-file-group__list a') 
