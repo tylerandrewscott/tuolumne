@@ -1,14 +1,7 @@
-
-
-if(!require(tokenizers)){install.packages('tokenizers');require(tokenizers)}
-if(!require(spacyr)){install.packages('spacyr');require(spacyr)}
-if(!require(tigris)){install.packages('tigris');require(tigris)}
-if(!require(maptools)){install.packages('maptools');require(maptools)}
-if(!require(acs)){install.packages('acs');require(acs)}
-if(!require(pbapply)){install.packages('pbapply');require(pbapply)}
-if(!require(data.table)){install.packages('data.table');require(data.table)}
-if(!require(sf)){install.packages('sf');require(sf)}
-if(!require(doParallel)){install.packages('doParallel');require(doParallel)}
+pack = c('tokenizers','spacyr','tigris','maptools','acs','pbapply','data.table','sf','doParallel')
+need = pack[!pack %in% installed.packages()[,'Package']]
+lapply(need,install.packages)
+lapply(pack,require,character.only=T)
 
 #spacy_install(conda = "auto", version = "latest", lang_models = "en",
 #              python_version = "3.6", envname = "spacy_condaenv", pip = FALSE,
@@ -24,8 +17,8 @@ floc = 'scratch/'
 cors = detectCores() - 4
 cl = makeCluster(cors)
 registerDoParallel(cl)
-
-full_tlist <- readRDS('../bucket_mount/tuolumne/scratch/boilerplate/big_text_files/big_eis_text.rds')
+projects = fread('boilerplate_project/data_products/project_candidates_eis_only.csv')
+full_tlist <- readRDS('boilerplate_project/input/feis_corpus_2013-2020.rds')
 
 top40pages = full_tlist[Page %in% 1:50,]
 
@@ -42,7 +35,16 @@ clusterEvalQ(cl,{require(spacyr);require(data.table);require(stringr);
 })
 gc()
 
-ngaz = fread('../bucket_mount/tuolumne/scratch/NationalFile_20191101.txt',sep = '|',fill = T,stringsAsFactors = F,quote = "")
+
+td = tempdir()
+adm_url = "https://geonames.usgs.gov/docs/stategaz/NationalFile.zip"
+tf = tempfile(tmpdir=td, fileext=".zip")
+download.file(adm_url, tf)
+fname = unzip(tf, list=TRUE)
+unzip(tf, files=fname$Name, exdir=td, overwrite=TRUE)
+fpath = file.path(td, grep('txt$',fname$Name,value=T))
+
+ngaz = fread(fpath,sep = '|',fill = T,stringsAsFactors = F,quote = "")
 ngaz$CFIPS = ifelse(!is.na(ngaz$COUNTY_NUMERIC),paste0(formatC(ngaz$STATE_NUMERIC,width = 2,flag = '0'),formatC(ngaz$COUNTY_NUMERIC,width = 3,flag = '0')),NA)
 ngaz = ngaz[!ngaz$FEATURE_NAME %in% c('Pacific Ocean','South Pacific Ocean','Atlantic Ocean','Gulf of Mexico','Caribbean Sea'),]
 ngaz = ngaz[!is.na(ngaz$FEATURE_CLASS),]
@@ -59,7 +61,7 @@ gc()
 ngaz$FEATURE_NAME2 = str_replace_all(ngaz$FEATURE_NAME,pattern = '\\s','_')
 
 fls = unique(top40pages$File)
-geo_file = '../bucket_mount/tuolumne/scratch/boilerplate/geo_temp.rds'
+geo_file = 'boilerplate_project/data_products/geo_temp.rds'
 if(file.exists(geo_file)){existing_geo = readRDS(geo_file)}else{existing_geo = NULL}
 
 multis = projects[projects$State=='Multi',]
@@ -114,26 +116,22 @@ full_geo = full_geo[PRIM_LAT_DEC!=0,]
 
 saveRDS(full_geo,geo_file)
 
+# 
+# geomatches = readRDS(geo_file)
+# projects = fread('boilerplate_project/data_products/project_candidates_eis_only.csv')
+# projects = projects[Document=='Final',]
+# projects = projects[grepl('^201[3-9]|^2020',PROJECT_ID),]
+# projects = projects[!duplicated(EIS.Number),]
+# documents = fread( 'boilerplate_project/data_products/document_candidates_eis_only.csv')
+# documents = documents[PROJECT_ID %in% projects$PROJECT_ID,]
+# 
+# have_docs = projects$EIS.Number[projects$EIS.Number %in% str_remove(full_tlist$File,'_.*')]
+# have_geo = projects$EIS.Number[projects$EIS.Number %in% geomatches$PROJECT_ID]
 
-geomatches = readRDS(geo_file)
-projects = fread('../bucket_mount/tuolumne/scratch/boilerplate/project_candidates_eis_only.csv')
-projects = projects[Document=='Final',]
-projects = projects[grepl('^201[3-9]|^2020',PROJECT_ID),]
-projects = projects[!duplicated(EIS.Number),]
-documents = fread( '../bucket_mount/tuolumne/scratch/boilerplate/document_candidates_eis_only.csv')
-documents = documents[PROJECT_ID %in% projects$PROJECT_ID,]
 
-have_docs = projects$EIS.Number[projects$EIS.Number %in% str_remove(full_tlist$File,'_.*')]
-have_geo = projects$EIS.Number[projects$EIS.Number %in% geomatches$PROJECT_ID]
+#keep_fips = state_tigris$STATEFP[!state_tigris$STUSPS%in%c('AK','HI','GU','MU','PR','VI','AS','MP')]
 
-
-keep_fips = state_tigris$STATEFP[!state_tigris$STUSPS%in%c('AK','HI','GU','MU','PR','VI','AS','MP')]
-require(ggthemes)
-ggplot() + ggtitle('Geotagged locations in EIS documents','(excluding AK and HI)') + 
-  geom_sf(data = state_tigris[state_tigris$STATEFP %in% keep_fips,],fill = 'white') + 
-  theme_map() + 
-  geom_point(pch = 21,data = geomatches[str_extract(geomatches$CFIPS,'^[0-9]{2}') %in% keep_fips,],aes(x = PRIM_LONG_DEC,y = PRIM_LAT_DEC),alpha = 0.15)
-ggplot() + ggtitle('Geotagged locations in EIS documents','(excluding AK and HI)') + 
-  geom_sf(data = state_tigris[state_tigris$STATEFP %in% c('40','48'),],fill = 'white') + 
-  theme_map() + 
-  geom_point(pch = 21,data = geomatches[PROJECT_ID == '20170215',],aes(x = PRIM_LONG_DEC,y = PRIM_LAT_DEC),alpha = 0.8)
+# ggplot() + ggtitle('Geotagged locations in EIS documents','(excluding AK and HI)') + 
+#   geom_sf(data = state_tigris[state_tigris$STATEFP %in% keep_fips,],fill = 'white') + 
+#   theme_map() + 
+#   geom_point(pch = 21,data = geomatches[str_extract(geomatches$CFIPS,'^[0-9]{2}') %in% keep_fips,],aes(x = PRIM_LONG_DEC,y = PRIM_LAT_DEC),alpha = 0.15)

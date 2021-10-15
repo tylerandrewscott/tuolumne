@@ -4,7 +4,7 @@ need = !pack %in% installed.packages()[,"Package"]
 if(any(need)){sapply(pack[need],install.packages)}
 sapply(pack,require,character.only=T)
 
-run_basemod = F
+run_basemod = T
 REWRITE = T
 RERUN = T
 #update.packages(ask = FALSE, checkBuilt = TRUE)
@@ -16,39 +16,15 @@ stepsize = 500
 
 
 projects = fread('boilerplate_project/data_products/project_candidates_eis_only.csv')
-full = c('Forest Service','Bureau of Land Management','Department of Commerce','National Park Service','Federal Energy Regulatory Commission','Department of Health and Human Services','National Oceanic and Atmospheric Administration','Bureau of Reclamation',"U.S. Army Corps of Engineers" ,'Department of Defense',"Department of Transportation (other)",'Department of Energy',"Bureau of Indian Affairs","Department of Homeland Security","Department of Interior (other)","Department of Housing and Urban Development","California Department of Transportation","Nuclear Regulatory Commission","Federal Highway Administration" ,"Fish and Wildlife Service","General Services Administration" ,"Tennessee Valley Authority" ,"USDA (non-FS)"  )
-brev =c('FS','BLM','DOC','NPS','FERC','DHHS','NOAA','BR','ACOE','DOD','DOT (other)','DOE','BIA','DHS','DOI (other)','DHUD','CalDOT','NRC','FHWA','FWS','GSA','TVA','USDA (non-FS)')
-nms = data.table(full,brev)
-projects$AGENCY_SHORT <- nms$brev[match(projects$AGENCY,nms$full)]
-projects$EIS.Number <- as.character(projects$EIS.Number)
 
 docs = fread('boilerplate_project/data_products/document_candidates_eis_only.csv')
 
-projects$Title <- gsub('\"',"",projects$Title,fixed = T)
-projects$clean.title = str_replace(projects$Title,'\\s{1,}',' ')
-projects$DECISION = NA
-projects$DECISION[grepl('\\WAMP\\W|RMP|CCP|(CONSERVATION|RESOURCE|MANAGEMENT|MANGEMENT|RESTORATION|INVESTIGATION|LAND USE|FOREST|STEWARDSHIP|GRASSLAND|ACTIVITY|NOURISHMENT|ECOSYSTEMS|DEVELOPMENT|MASTER|TRAVEL|LONG-TERM|TRANSPORTATION|WATERCRAFT) PLAN|TRAVEL MANAGEMENT|SYSTEM PLANNING STUDY|GENERIC|PLAN REVISION|PLAN AMENDMENT|REFORMULATION|CONTROL MANUAL|HEEIA NATIONAL ESTUAR|WILDLIFE REFUGE COMPLEX|OSAGE COUNTY OIL AND GAS',toupper(projects$clean.title))] <- 'Plan'
-projects$DECISION[grepl('REGULATION|STANDARDS|OMNIBUS|QUOTAS|NATIONAL APPROACH|LEGISLATIVE|DESIGNATION|ACTIVITIES|TRANSFERS|RANGELAND ANALYSIS|DETERMINATION|RESILIENCY INITIATIVES|FOREST-WIDE|BYCATCH|GRAZING ANALYSIS|COMBINE(D|) LICENSE|CATCH LIMITS|RANGELAND MANAGEMENT|CARCASS MANAGEMENT|PROPOSED STRATEGIES|SUSTAINABILITY INITIATIVES|REGULATORY|REGULATIONS|MANAGEMENT OPERATIONS|STRATEGY|VISITOR ACCESS|SITE-WIDE|ISSUANCE|RISK REDUCTION|OPERATIONAL EFFICIENCY|BASING|PROGRAMS|EXCHANGE|(READINESS|OIL AND GAS|GEOPHYSICAL) ACTIVITIES|RECAPITALIZATION|INVASIVE PLANT (TREATMENT|MANAGEMENT)|PROGRAMMATIC|(\\W|^)PROGRAM(\\W|$)|PERMIT RENEWAL|\\WUSE OF\\W|POLICY|CONTRACT|RULE|MEASURES|PERMIT TO RELEASE|RISK MANAGEMENT|FORESTWIDE|REZONING|MANAGEMENT RESPONSE|TRAINING AND TESTING|RESIDUAL MANAGEMENT|LEASING|NATIONWIDE|WESTERN STATES|SYSTEM OPERATIONS|AIRFIELD OPERATIONS|DAMAGE REDUCTION|TRAINING AND OPERATIONS',toupper(projects$clean.title))] <- 'Program/policy'
-#note: after coding the other instances of word "management", remainder are actually forest service _projects_ that sound like plans
-#NOTE: 'plan of operation" connotes a case where new thing is built, eis studies project+intended operations
-projects$DECISION[grepl('(US|I|SR)(-|\\s)[0-9]{1,3}|\\WPROJECT(S|)(\\W|$)|NAVIGATION STUDY|BYPASS|MINING|RAILROAD|\\WLOOP\\W|HIGH SPEED|REDEVELOPMENT|HWY [0-9]|WIND FARM|EXPRESSWAY|SPECIAL-USE|RECREATION PERMIT|SITE WORK|SAFETY MODIFICATION|INTERMODAL|REGIONAL WATER SYSTEM|LAUNCH SITE|FACILITIES REMOVAL|ROADWAY|RAIL STUDY|INTERSTATE [0-9]|FEASIBILITY REPORT|FEASIBILITY STUDY|PROPOSED ESTABLISHMENT|POWER SYSTEM|HIGH-SPEED|RESERVOIR|SALVAGE|SITE PERMIT|LANDFILL|REPLACEMENT|CAMPUS|CONCEPT PLANS|POST 45|TUNNEL|TRAINING CENTER|CONSTRUCTION|EMBARKATION|MODIFICATIONS|DRAWDOWN|ACQUISITION|COMMUNICATION SITE|SPECIFIC PLAN|CHANNEL|BRIDGE|ECOSYSTEM RESTORATION|TAMARISK REMOVAL|PRODUCTION|TRANSMISSION|\\WLOCKS\\W|MODERNIZATION|PLAN OF OPERATION|OPERATIONAL PLAN|OPERATIONS PLAN|STATION|EXPERIMENTAL REMOVAL|\\WMINE$|FREEWAY|DREDGING|DEEPWATER PORT|REFORESTATION|EXTENSION|REBUILD|REHABILITATION|LIGHT RAIL|DISPOSAL|CROSSING|RELOCATION|REMEDIATION|LEVEES|RESTORATION$|RECONSTRUCTION|CONVERSION|CLOSURE|IMPROVEMENT|PARKWAY|HIGHWAY|\\WTRAIN\\W|CORRIDOR|EXPANSION|MAINTENANCE|UPGRADE|SALE|(FUELS|VEGETATION|RESTORATION) MANAGEMENT|DISPOSITION|FEE(-|\\s)TO(-|\\s)TRUST|BEDDOWN|EVALUATION|FACILITY|\\WMINE\\W|PASSAGE',toupper(projects$clean.title))&is.na(projects$DECISION)] <- 'Project'
-
-projects$DECISION[projects$clean.title %in% c("Sabine Pass to Galveston Bay","Everglades Agricultural Area A-1 Shallow Flow Equalization Basin","Ochoco Summit Trail System","Malheur National Forest Site-Specific Invasive Plants Treatment", "Beasley Pond Analysis Area" ,"2016-2020 Fernow Experimental Forest","Lee Canyon EIS","Alton Coal Tract Lease By Application" , "Amoruso Ranch" , "Trout Creek","Rim Fire Recovery","North Fork Wells of Eagle Creek" ,"High Uintas Wilderness Colorado River Cutthroat Trout Habitat Enhancement","Beaver Creek","Sugarloaf Hazardous Fuels Reduction" , "Starry Goat","Little Boulder","Flat Country","South San Francisco Bay Shoreline Phase I" ,"Shasta Lake Water Resources Investigation","Ambler Road Final Environmental Impact Statement","Adams and Denver Counties, Colorado General Investigation Study","Tollgate Fuels Reduction", "Gold Butterfly" ,"RES Americas Moapa Solar Energy Center" ,'Cordova Hills','Riley Ridge to Natrona',"Restoration of the Mariposa Grove of Giant Sequoias" ,"Lassen Lodge Final Environmental Impact Statement","I69 Section 6 Martinsville to Indianapolis","NIH Bethesda Surgery, Radiology, And Lab Medicine Building","Continental United States (CONUS) Interceptor Site")]<-'Project'
-projects$DECISION[projects$clean.title %in% c("FEIS to Address the Presence of Wolves at Isle Royale National Park","BEH Rangeland Allotments","Shoreline II Outfitter/Guide"  ,"Designated Routes and Areas for Motor Vehicle Use (DRAMVU)", "Southwest Coastal Louisiana" , "Central and Southern Florida, Everglades Agricultural Area (EAA), Florida","Previously Issued Oil and Gas Leases in the White River National Forest" , "Powder River Training Complex Ellsworth Air Force Base"  ,"Four-Forest Restoration Initiative  Coconino and Kaibab National Forests" ,"The Management of Conflicts Associated with Double-crested Cormorants","Gulf Regional Airspace Strategic Initiative Landscape Initiative")]<-'Program/policy'
-projects$DECISION[projects$clean.title %in% c("Rocky Mountain Arsenal National Wildlife Refuge", "Antelope Grazing Allotments AMP","Ringo FEIS & FPA")]<-'Plan'
-projects$AGENCY <- fct_infreq(projects$AGENCY)
-projects$AGENCY_SHORT <- fct_infreq(projects$AGENCY_SHORT)
-
-
-
-
-if(RERUN){
-  if(Sys.info()[['sysname']]== 'Linux'){flist_dt = readRDS('../bucket_mount/tuolumne/scratch/boilerplate/big_text_files/big_eis_text.rds')}
-  if(Sys.info()[['sysname']]!= 'Linux'){flist_dt = readRDS('scratch/boilerplate/big_text_files/big_eis_text.rds')}
-  
+  flist_dt = readRDS('boilerplate_project/input/feis_corpus_2013-2020.rds')
   flist_dt = flist_dt[str_replace(flist_dt$File,'txt$','pdf') %in% docs$FILE_NAME,]
+  flist_dt$EIS.Number <- str_extract(flist_dt$File,'^[0-9]{8}')
   source('boilerplate_project/code/functions/cleanText.R')
   flist_dt <- cleanText(flist_dt)
+  
   
   meta_dt = flist_dt[,.(Page,File,EIS.Number)]
   page_counts = meta_dt[,.N,by=.(EIS.Number)]
@@ -57,16 +33,15 @@ if(RERUN){
   projects[,.N,by=.(AGENCY)][order(-N)]
   projects[,USE_DOCS:=EIS.Number %in% meta_dt$EIS.Number]
   
-  
-  if(REWRITE){
     tb = htmlTable(projects[,.(sum(USE_DOCS),.N),by=.(AGENCY)][order(-V1),])
     outdir.tables = "boilerplate_project/output/tables/" 
-    sink(paste0(outdir.tables,"sample_by_agency.html"))
+    sink(paste0(outdir.tables,"Table1_sample_by_agency.html"))
     print(tb,type="html",useViewer=F)
     sink()
-  }
   
-  lda = readRDS('boilerplate_project/data_products/eis_page_scores_scratch.rds')
+  
+
+  lda =   rbindlist(lapply(list.files('boilerplate_project/data_products/score_results/',full.names = T),readRDS),use.names = T,fill = T)
   lda$score = as.numeric(lda$score)
   lda = lda[!duplicated(lda),]
   lda = lda[score>=300,]
@@ -86,20 +61,17 @@ if(RERUN){
   
   lda <- lda[a_file %in% str_replace(docs$FILE_NAME,'pdf$','txt'),]
   lda <- lda[b_file %in% str_replace(docs$FILE_NAME,'pdf$','txt'),]
-  
-  if(REWRITE){
-    # test = lda[score>300&score<350,]
-    # test[agency1=='Federal Energy Regulatory Commission'&agency2 == 'Federal Energy Regulatory Commission']
+
+  ###### THIS IS HOW TO REPLICATE FIGURE A1
     aa = flist_dt$text[flist_dt$File=='20130046_Mid_Fork_American_FEIS_FERC_2079.txt'&flist_dt$Page==308]
     bb = flist_dt$text[flist_dt$File=='20180175_Final_Environmental_Impact_Statement_for_the_Lassen_Lodge_Hydroelectric_Project-P-12496-002.txt'&flist_dt$Page==177]
     align_local(aa,bb)
-    # 
-    # test = lda[score>600&score<750,]
-    # test[agency1=='Federal Energy Regulatory Commission'&agency2 == 'Federal Energy Regulatory Commission']
+
+    ###### THIS IS HOW TO REPLICATE FIGURE A2
     aa = flist_dt$text[flist_dt$File=='20170148_VolumeI_FEIS_MXPGXP_20170713.txt'&flist_dt$Page==551]
     bb = flist_dt$text[flist_dt$File=='20180144_MIDSHIP_Project_Final_EIS_Vol_I.txt'&flist_dt$Page==295]
     align_local(aa,bb)
-  }
+
   
   lda_eis = lda[a_id != b_id,]
   lda_solo = rbind(lda_eis[,.(a_id,score,a,a_file,a_page)],lda_eis[,.(b_id,score,b,b_file,b_page)],use.names = F)
@@ -119,16 +91,12 @@ if(RERUN){
   countover300$AGENCY_SHORT = projects$AGENCY_SHORT[match(countover300$AGENCY,projects$AGENCY)]
   countover300$over300[is.na(countover300$over300)] <- 0
   
-  
-  
-  
-  
   agency_summary_stats = countover300[,list(mean(over300/total_pages),median(over300/total_pages)),by = .(AGENCY_SHORT)]
   names(agency_summary_stats) <- c('AGENCY_SHORT','mean','median')
   agency_summary_stats$mean = round(agency_summary_stats$mean,3)
   agency_summary_stats$median = round(agency_summary_stats$median,3)
   
-  if(REWRITE){
+
     (gg_pages_over_300 = ggplot() + 
        #  geom_jitter(data = countover300,aes(x = fct_rev(AGENCY_SHORT),y = over300/total_pages),pch = 21,colour = 'grey50') + 
        #geom_boxplot(data = countover300,aes(x = fct_rev(AGENCY_SHORT),y = over300/total_pages),fill = NA) + 
@@ -141,8 +109,8 @@ if(RERUN){
        #limits=c(0,round(max(countover300$over300/countover300$total_pages) ,1))) + 
        theme(legend.title = element_blank(),axis.title.y = element_blank(),legend.position = c(0.8,0.25),axis.text = element_text(size = 12)) + ggtitle("Text reuse between EISs by project and agency"))
     
-    ggsave(gg_pages_over_300,filename = 'boilerplate_project/output/figures/Figure3_agencies_lda_over_300.png',dpi = 300,units = 'in',height = 4.5,width = 6)
-  }
+    ggsave(gg_pages_over_300,filename = 'boilerplate_project/output/figures/Figure3_agencies_lda_over_300.tiff',dpi = 300,units = 'in',height = 4.5,width = 6)
+
   eis_ids = unique(projects$EIS.Number[projects$USE_DOCS])
   n_eis = length(eis_ids)
   eis_blank_mat = matrix(0,ncol = n_eis,nrow = n_eis,dimnames = list(eis_ids,eis_ids))
@@ -159,16 +127,7 @@ if(RERUN){
   setnames(project_centroids,'PROJECT_ID','EIS.Number')
   us_states  = tigris::states(class = 'sf',year = 2015)
   us_states = us_states[!us_states$STUSPS %in%  c('VI','MP','GU','AS'),]
-  # 
-  # ggplot() + geom_sf(data = us_states,fill = NA,lwd = 0.2) +
-  #   scale_y_continuous(expand = c(0,0)) +
-  #   scale_x_continuous(limits=c(-180,-50),expand = c(0,0)) +
-  #   geom_point(data = blm_ea_centroids,aes(x = V1,y = V2,color = 100 * N/total_pages),alpha = 0.5) +
-  #   scale_color_viridis_c(name = '% high reuse',direction = -1) + theme_map()
-  # # 
-  
-  # 
-  if(REWRITE){
+
     gg_centroid = ggplot() +
       geom_sf(data = us_states,fill = NA,lwd = 0.2,col ='grey50') +
       scale_y_continuous(expand = c(0,0)) +
@@ -177,8 +136,10 @@ if(RERUN){
       theme_map() +
       ggtitle("Estimated project centroids from geotagging") + theme(text = element_text(size = 12)) +
       NULL
-    ggsave(plot = gg_centroid,filename = 'boilerplate_project/output/figures/FigureA5_estimated_centroids.png',dpi = 300,width = 7,height =  6,units = 'in')
-  }
+
+
+    ggsave(plot = gg_centroid,filename = 'boilerplate_project/output/figures/FigureA5_estimated_centroids.tiff',dpi = 300,units = 'in')
+
   estimate_loc = eis_ids[!eis_ids %in% project_centroids$EIS.Number]
   ### add in agency-wide replacements for four missing locations ####
   project_centroids = rbind(project_centroids,
@@ -202,15 +163,13 @@ if(RERUN){
   consults = readRDS('boilerplate_project/data_products/consultant_project_matches.RDS')
   setnames(consults,'PROJECT_ID','EIS.Number')
   consult_Freq = consults[EIS.Number %in% projects$EIS.Number[projects$USE_DOCS],][,.N,by = .(FIRM)][order(-N)][N>=10,]
-  if(REWRITE){
-    #consults[PROJECT_ID %in% epa_record$EIS.Number,][,.N,by = .(FIRM)][order(-N)][1:25,]
 
     tableout <-htmlTable(consult_Freq)
     outdir.tables = 'boilerplate_project/output/tables/'
-    sink(paste0(outdir.tables,"consultant_table.html"))
+    sink(paste0(outdir.tables,"TableA1_consultant_table.html"))
     print(tableout,type="html",useViewer=F)
     sink()
-  }
+
   
   consult_matrix = as.matrix(table(consults$FIRM,consults$EIS.Number))
   notin = projects$EIS.Number[!projects$EIS.Number%in% colnames(consult_matrix)]
@@ -221,9 +180,11 @@ if(RERUN){
   project_to_project_consult_matrix = slam::crossprod_simple_triplet_matrix(consult_triplet)
   
   lit_dt = fread('boilerplate_project/data_products/nepa_litigation_by_agency_year.csv')
-  ldt_long = reshape2::melt(lit_dt,id.vars = 'recode',measure.vars = patterns('y[0-9]'))
-  ldt_long$year <- as.numeric(str_remove(ldt_long$variable,'[a-z]'))
-  ltd_total = ldt_long[year<2013,][,sum(value,na.rm = T),by=.(recode)]
+  
+  ldt_long = pivot_longer(lit_dt,cols = starts_with("y"),names_to = 'year',values_to = 'litigations')
+  ldt_long$year <- as.numeric(str_remove(ldt_long$year,'[a-z]'))
+  ldt_long <- data.table(ldt_long)
+  ltd_total = ldt_long[year<2013,][,sum(litigations,na.rm = T),by=.(recode)]
   
   tots = projects[,.N,by=.(AGENCY_SHORT)]
   
@@ -241,10 +202,8 @@ if(RERUN){
  
   projects = data.table(projects,ideol[index,])
   
-
-
-  
   projects[is.na(skills_rating)]$skills_rating<-0
+
 gg_agency = ggplot(projects[!duplicated(acr),]) + 
     geom_point(aes(x = skills_rating,y = ideo_rating)) + 
     geom_label_repel(aes(x = skills_rating,y = ideo_rating,label = acr),max.overlaps = 15) + 
@@ -254,20 +213,11 @@ gg_agency = ggplot(projects[!duplicated(acr),]) +
     ggtitle('Perceived agency workforce skill and ideology') +
     labs(caption = "(data from Richardson et al. 2018)")
   
-ggsave(filename = 'boilerplate_project/output/figures/A6_agency_attributes.png',plot = gg_agency,dpi=500,width = 6,height = 6,units = 'in')
+ggsave(filename = 'boilerplate_project/output/figures/FigureA6_agency_attributes.tiff',plot = gg_agency,dpi=500,width = 6,height = 6,units = 'in')
   
  
-  #if(runEISnet){ 
-  #eis_p_list = pblapply(seq(2,20,2),function(p) {
-  
   # ######### EIS analysis #########
   s = 300
-  #tcounts = lda_eis[score>s & a_id!=b_id,.N,by = .(a_id,b_id)] 
-
-  # edge_counts = rbind(lda[a_id!=b_id,.N,by=.(a_id,b_id,a)][,.N,b=.(a_id,b_id)],
-  #                              lda[a_id!=b_id,.N,by=.(b_id,a_id,b)][,.N,b=.(b_id,a_id)],use.names = F)
-  # 
-  
   lda_eis$a_count = page_counts$total_pages[match(lda_eis$a_id,page_counts$EIS.Number)]
   lda_eis$b_count = page_counts$total_pages[match(lda_eis$b_id,page_counts$EIS.Number)]
   
@@ -288,7 +238,7 @@ ggsave(filename = 'boilerplate_project/output/figures/A6_agency_attributes.png',
   
   (gg_threshold = ggplot() + geom_vline(xintercept = 3,lty = 2,col = 'grey50') + geom_path(aes(x = x_vals,y= dns)) + geom_point(aes(x = x_vals,y= dns)) + theme_bw() + 
       xlab('threshold for y_ij = 1') + ylab('graph density') + ggtitle('Graph density vs. threshold for shared pages'))
-  ggsave(plot = gg_threshold,filename = 'boilerplate_project/output/figures/FigureA3_tiethreshold_density.png',height = 4,width = 6,units = 'in',dpi = 500)
+  ggsave(plot = gg_threshold,filename = 'boilerplate_project/output/figures/FigureA3_tiethreshold_density.tiff',height = 4,width = 6,units = 'in',dpi = 500)
   
   
   
@@ -335,7 +285,7 @@ ggsave(filename = 'boilerplate_project/output/figures/A6_agency_attributes.png',
   eis_author_index = match(eis_net %v% 'vertex.names',rownames(eis_author_matrix))
   eis_author_matrix = eis_author_matrix[eis_author_index,eis_author_index]
   saveRDS(list('author' = eis_author_matrix,'consult' = eis_consult_matrix,'distance' = eis_distance_matrix),'boilerplate_project/data_products/edgecov_list.rds')
-}
+
 
 
 eis_net <- readRDS('boilerplate_project/data_products/network_object.rds')
@@ -348,28 +298,19 @@ eis_order = rank(eis_net %v% 'EIS')
 
 temp_eis_net <- eis_net
  
-table(temp_eis_net %v% 'Output')
 
-if(run_basemod){
-  
   cores = detectCores()-5
   cl = makeCluster(cores)
   registerDoParallel(cl)
+  
 
-# mod_lolog = lolog(temp_eis_net ~ edges + gwdegree(1) + gwesp(1) + 
-#                     constraint(boundedDegree(0L,max(degree(temp_eis_net))))|eis_order,nsamp = 10e3,
-#                   maxIter = 80,cluster = cl,theta = mod_lolog$theta)
-# saveRDS(object = mod_lolog,'boilerplate_project/data_products/base_lolog_nocovariates.rds')
-
-mod_lolog_cov2 = lolog(temp_eis_net ~ edges + 
-                       # degree(0) + 
-                       # esp(0) + esp(13) + 
+mod_lolog_cov = lolog(temp_eis_net ~ edges + 
+                     
                        gwdegree(1) + 
                        gwesp(2) + 
-                    #constraint(boundedDegree(0L,max(degree(temp_eis_net)))) +
+                 
                     nodeFactor('Year') +
                     nodeCov('ln_Pages_Hashed') +
-                     # nodeFactor('Agency_Short')+
                     nodeMatch('Agency_Short') +
 
                     nodeFactor('Consultant')+
@@ -383,20 +324,15 @@ mod_lolog_cov2 = lolog(temp_eis_net ~ edges +
                    edgeCov(eis_consult_matrix,'Shared_Consultant') + 
                     edgeCov(eis_distance_matrix,'Centroid_Distance')|eis_order,
         nsamp = 5e3,
-                  maxIter = 40,cluster = cl)
+                  maxIter = 60,cluster = cl)
 
-gof_deg_object2 = gofit(object = mod_lolog_cov2,formula = temp_eis_net ~ degree(0:50),nsim = 500,cluster = cl)
-gof_esp_object2 = gofit.lolog(object = mod_lolog_cov2,formula = temp_eis_net ~ esp(0:25),nsim = 500,cluster = cl)
+gof_deg_object = gofit(object = mod_lolog_cov,formula = temp_eis_net ~ degree(0:50),nsim = 500,cluster = cl)
+gof_esp_object = gofit.lolog(object = mod_lolog_cov,formula = temp_eis_net ~ esp(0:25),nsim = 500,cluster = cl)
 
+saveRDS(object = mod_lolog_cov,'boilerplate_project/data_products/lolog_withcovariates.rds')
+saveRDS(object = summary(mod_lolog_cov),'boilerplate_project/data_products/lolog_summary_withcovariates.rds')
 
-saveRDS(object = mod_lolog_cov2,'boilerplate_project/data_products/lolog_withcovariates.rds')
-saveRDS(object = summary(mod_lolog_cov2),'boilerplate_project/data_products/lolog_summary_withcovariates.rds')
-#gof_deg_object = gofit(object = mod_lolog_cov,formula = temp_eis_net ~ degree(0:50),nsim = 1000)
-#gof_esp_object = gofit(object = mod_lolog_cov,formula = temp_eis_net ~ esp(0:25),nsim = 1000)
-
-saveRDS(object = list(gof_deg_object2,gof_esp_object2),'boilerplate_project/data_products/lolog_gof.rds')
-
-}
+saveRDS(object = list(gof_deg_object,gof_esp_object),'boilerplate_project/data_products/lolog_gof.rds')
 
 
 
@@ -419,12 +355,7 @@ g2 = ggplot() + geom_path(data = dof2,aes(x = Var2-1,group = Var1,y = value,col 
  # guides(color = guide_legend(override.aes = list(lwd = c(1,1),labels= c('A','B'),col = c('1','2'))))
   theme(legend.position = c(0.7,0.9),legend.title = element_blank(),legend.background = element_rect(fill = alpha('white',0)))
 
-ggsave(grid.arrange(g1,g2,ncol = 2,top = 'Model goodness-of-fit: observed vs. simulated structures'),filename = 'boilerplate_project/output/figures/FigureA4_appendix_gof_plots.png',dpi = 500, width = 7,height = 3.5, units = 'in')
-
-if(!run_basemod){
-  #mod_lolog = readRDS('boilerplate_project/data_products/base_lolog_nocovariates.rds')
-  mod_lolog_cov = readRDS('boilerplate_project/data_products/lolog_withcovariates.rds')
-}
+ggsave(grid.arrange(g1,g2,ncol = 2,top = 'Model goodness-of-fit: observed vs. simulated structures'),filename = 'boilerplate_project/output/figures/FigureA4_appendix_gof_plots.tiff',dpi = 500, width = 7,height = 3.5, units = 'in')
 
 
 msum = readRDS('boilerplate_project/data_products/lolog_summary_withcovariates.rds')
@@ -463,31 +394,10 @@ coef_cast = coef_cast[order(fct_rev(coef)),]
 outdir.tables = "boilerplate_project/output/tables/" 
 tableout <-htmlTable(coef_cast)
 outdir.tables = "boilerplate_project/output/tables/" 
-sink(paste0(outdir.tables,"eis_lolog_coefs.html"))
+sink(paste0(outdir.tables,"Table6_eis_lolog_coefs.html"))
 print(tableout,type="html",useViewer=F)
 sink()
 
-
-
-#gof_deg_object = gofit(object = mod_lolog,formula = temp_eis_net ~ degree(0:50),nsim = 1000)
-#gof_esp_object = gofit(object = mod_lolog,formula = temp_eis_net ~ esp(0:25),nsim = 1000)
-gof_deg_object2 = gofit.lolog(object = mod_lolog_cov[[2]],formula = temp_eis_net ~ degree(0:50),nsim = 1000)
-gof_esp_object2 = gofit(object = mod_lolog_cov,formula = temp_eis_net ~ esp(0:25),nsim = 1000)
-
-
-# NA to summarize
-diag(eis_consult_matrix)<- NA
-diag(eis_author_matrix)<- NA
-diag(eis_distance_matrix)<- NA
-mean(eis_consult_matrix,na.rm = T)
-mean(eis_author_matrix,na.rm = T)
-mean(eis_distance_matrix,na.rm = T)
-#add back in so ergm works
-diag(eis_consult_matrix)<- 1
-diag(eis_author_matrix)<- 1
-diag(eis_distance_matrix)<- 0
-
-gc()
 
 
 

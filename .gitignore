@@ -3,6 +3,8 @@
 !/code/
 !.gitignore
 
+scott-davis-remote_api.json
+config_file.txt
 /deliverables/
 /input/
 /scratch/
