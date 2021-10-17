@@ -122,6 +122,8 @@ projects$DECISION[projects$clean.title %in% c("Rocky Mountain Arsenal National W
 projects$AGENCY <- fct_infreq(projects$AGENCY)
 projects$AGENCY_SHORT <- fct_infreq(projects$AGENCY_SHORT)
 
+projects = projects[order(-mdy(Federal.Register.Date)),][!duplicated(EIS.Number),]
+
 documents <- documents[!duplicated(documents),]
 documents = documents[!{grepl('\\(',documents$FILE_NAME) &!grepl('\\)',documents$FILE_NAME)},]
 
