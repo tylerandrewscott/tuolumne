@@ -30,12 +30,14 @@ docs = fread('boilerplate_project/data_products/document_candidates_eis_only.csv
   page_counts = meta_dt[,.N,by=.(EIS.Number)]
   setnames(page_counts,'N','total_pages')
   
+
   projects[,.N,by=.(AGENCY)][order(-N)]
   projects[,USE_DOCS:=EIS.Number %in% meta_dt$EIS.Number]
-  
-    tb = htmlTable(projects[,.(sum(USE_DOCS),.N),by=.(AGENCY)][order(-V1),])
+ 
+    tb = htmlTable(rbind(projects[,.(sum(USE_DOCS),.N),by=.(AGENCY)][order(-N),],
+            cbind(AGENCY = 'total',projects[,.(sum(USE_DOCS),.N),])))
     outdir.tables = "boilerplate_project/output/tables/" 
-    sink(paste0(outdir.tables,"Table1_sample_by_agency.html"))
+    sink(paste0(outdir.tables,"Table3_sample_by_agency.html"))
     print(tb,type="html",useViewer=F)
     sink()
   
@@ -110,7 +112,9 @@ docs = fread('boilerplate_project/data_products/document_candidates_eis_only.csv
        theme(legend.title = element_blank(),axis.title.y = element_blank(),legend.position = c(0.8,0.25),axis.text = element_text(size = 12)) + ggtitle("Text reuse between EISs by project and agency"))
     
     ggsave(gg_pages_over_300,filename = 'boilerplate_project/output/figures/Figure3_agencies_lda_over_300.tiff',dpi = 300,units = 'in',height = 4.5,width = 6)
+    
 
+    
   eis_ids = unique(projects$EIS.Number[projects$USE_DOCS])
   n_eis = length(eis_ids)
   eis_blank_mat = matrix(0,ncol = n_eis,nrow = n_eis,dimnames = list(eis_ids,eis_ids))
@@ -262,8 +266,6 @@ ggsave(filename = 'boilerplate_project/output/figures/FigureA6_agency_attributes
   eis_net %v% 'Consultant' <- network.vertex.names(eis_net) %in% consults$EIS.Number
   eis_distance_matrix = abs(dist_mat[rownames(dist_mat) %in% {eis_net %v% 'vertex.names'},colnames(dist_mat) %in% {eis_net %v% 'vertex.names'}])
 
-
-  
   readab = readRDS('boilerplate_project/data_products/readability_scores_by_project.rds')
   
   eis_net %v% 'ln(Readability score)' <- (log(readab$re[match(eis_net %v% 'vertex.names',readab$EIS.Number)]))
@@ -298,21 +300,85 @@ eis_order = rank(eis_net %v% 'EIS')
 
 temp_eis_net <- eis_net
  
+list.vertex.attributes(temp_eis_net)
 
-  cores = detectCores()-5
+
+vertex_dt <- data.table(do.call(rbind,(lapply(list(
+exp(temp_eis_net %v% 'ln_Pages_Hashed'),
+exp(temp_eis_net %v% 'ln(Readability score)'),
+temp_eis_net %v% 'NEPA_litigation_per_FEIS_2001_2012',
+temp_eis_net %v% 'Skill_Rating',
+temp_eis_net %v% 'Ideo_Rating'),summary,digits = 3)))[,c(1,3,4,6)])
+rownames(vertex_dt) <- c('Pages','Readability','Litigations/FEIS',
+                         'Skill rating','Ideo. rating')
+tableout <-htmlTable(vertex_dt)
+outdir.tables = "boilerplate_project/output/tables/" 
+sink(paste0(outdir.tables,"Table5part2.html"))
+print(tableout,type="html",useViewer=F)
+sink()
+
+graph_dt <- data.table('attribute' = c('# projects','# ties','density'),
+                       'value' = round(c(network.size(temp_eis_net),network.edgecount(temp_eis_net),network.density(temp_eis_net)),3))
+tableout <-htmlTable(graph_dt)
+outdir.tables = "boilerplate_project/output/tables/" 
+sink(paste0(outdir.tables,"Table5part1.html"))
+print(tableout,type="html",useViewer=F)
+sink()
+
+edge_att_dt =data.table(round(do.call(rbind,list(
+summary(eis_distance_matrix[upper.tri(eis_distance_matrix)]),
+summary(eis_author_matrix[upper.tri(eis_author_matrix)]),
+summary(eis_consult_matrix[upper.tri(eis_consult_matrix)]),
+summary(c(abs(outer(temp_eis_net%v%"Fed_Reg_Date",temp_eis_net%v%"Fed_Reg_Date","-"))))))[,c(1,3,4,6)],3))
+rownames(edge_att_dt) <- c('Euclidean distance','Shared author','Shared consultant','Publication date')
+tableout <-htmlTable(edge_att_dt)
+outdir.tables = "boilerplate_project/output/tables/" 
+sink(paste0(outdir.tables,"Table5part3.html"))
+print(tableout,type="html",useViewer=F)
+sink()
+
+cons = table(temp_eis_net %v% 'Consultant')
+outp = table(temp_eis_net %v% 'Output')
+yrs = table(temp_eis_net %v% 'Year')
+dt = data.table(c(
+paste(paste0(names(outp),' = ',as.numeric(outp)),collapse = ' '),
+paste(paste0(names(cons),' = ',as.numeric(cons)),collapse = ' '),
+paste(paste0(names(yrs),' = ',as.numeric(yrs)),collapse = ' ')
+))
+rownames(dt) <- c('output type','used consultant?','year published')
+
+tableout <-htmlTable(dt)
+outdir.tables = "boilerplate_project/output/tables/" 
+sink(paste0(outdir.tables,"Table5part4.html"))
+print(tableout,type="html",useViewer=F)
+sink()
+
+
+
+shar = htmlTable(rbind(
+  cbind(paste0(round(mean(eis_consult_matrix)*100,2),'% of ij pairings'),
+paste0(round(sum(rowSums(eis_consult_matrix)>0) / nrow(eis_consult_matrix),2) * 100,"% have a shared consultant")),
+cbind(paste0(round(mean(eis_author_matrix)*100,2),'% of ij pairings'),
+paste0(round(sum(rowSums(eis_author_matrix)>0) / nrow(eis_author_matrix),2) * 100,"% have a shared author"))
+))
+tableout <-shar
+outdir.tables = "boilerplate_project/output/tables/" 
+sink(paste0(outdir.tables,"Table5part5.html"))
+print(tableout,type="html",useViewer=F)
+sink()
+
+  cores = detectCores()-2
   cl = makeCluster(cores)
   registerDoParallel(cl)
+  seed = 24
   
 
 mod_lolog_cov = lolog(temp_eis_net ~ edges + 
-                     
-                       gwdegree(1) + 
-                       gwesp(2) + 
-                 
+                       gwdegree(0.5) + 
+                       gwesp(0.5) + 
                     nodeFactor('Year') +
                     nodeCov('ln_Pages_Hashed') +
                     nodeMatch('Agency_Short') +
-
                     nodeFactor('Consultant')+
                     nodeCov('Skill_Rating') + 
                     nodeCov('Ideo_Rating') + 
@@ -323,8 +389,17 @@ mod_lolog_cov = lolog(temp_eis_net ~ edges +
                     edgeCov(eis_author_matrix,'Shared_Author') + 
                    edgeCov(eis_consult_matrix,'Shared_Consultant') + 
                     edgeCov(eis_distance_matrix,'Centroid_Distance')|eis_order,
-        nsamp = 5e3,
-                  maxIter = 60,cluster = cl)
+                  maxIter = 60,cluster = cl,maxStepSize = 2)
+
+summary(mod_lolog_cov)
+test = mod_lolog_cov
+str(mod_lolog_cov)
+plot(coef(test)~coef(mod_lolog_cov))
+abline(a = 0,b = 1)
+summary(test)
+summary(mod_lolog_cov)
+round(coef(test),3)
+round(coef(mod_lolog_cov),3)
 
 gof_deg_object = gofit(object = mod_lolog_cov,formula = temp_eis_net ~ degree(0:50),nsim = 500,cluster = cl)
 gof_esp_object = gofit.lolog(object = mod_lolog_cov,formula = temp_eis_net ~ esp(0:25),nsim = 500,cluster = cl)
@@ -334,9 +409,11 @@ saveRDS(object = summary(mod_lolog_cov),'boilerplate_project/data_products/lolog
 
 saveRDS(object = list(gof_deg_object,gof_esp_object),'boilerplate_project/data_products/lolog_gof.rds')
 
-
+mod_lolog_cov <- readRDS('boilerplate_project/data_products/lolog_withcovariates.rds')
 
 gof = readRDS('boilerplate_project/data_products/lolog_gof.rds')
+
+gof = list(gof_deg_object,gof_esp_object)
 dof = reshape2::melt(gof[[1]]$stats)
 obs = reshape2::melt( gof[[1]]$ostats)
 obs$degree = as.numeric(str_extract(rownames(obs),'[0-9]{1,}'))
@@ -354,7 +431,7 @@ g2 = ggplot() + geom_path(data = dof2,aes(x = Var2-1,group = Var1,y = value,col 
   scale_color_manual(values= c('black','red'),labels = c('simulated graph','observed graph')) + 
  # guides(color = guide_legend(override.aes = list(lwd = c(1,1),labels= c('A','B'),col = c('1','2'))))
   theme(legend.position = c(0.7,0.9),legend.title = element_blank(),legend.background = element_rect(fill = alpha('white',0)))
-
+grid.arrange(g1,g2,ncol = 2)
 ggsave(grid.arrange(g1,g2,ncol = 2,top = 'Model goodness-of-fit: observed vs. simulated structures'),filename = 'boilerplate_project/output/figures/FigureA4_appendix_gof_plots.tiff',dpi = 500, width = 7,height = 3.5, units = 'in')
 
 
