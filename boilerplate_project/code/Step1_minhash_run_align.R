@@ -32,9 +32,8 @@ full_tlist <- readRDS('boilerplate_project/input/feis_corpus_2013-2020.rds')
 source('boilerplate_project/code/functions/cleanText.R')
 
 full_tlist = cleanText(full_tlist)
-full_tlist$EIS.Number <- str_remove(full_tlistt$File,'_.*')
+full_tlist$EIS.Number <- str_remove(full_tlist$File,'_.*')
 full_tlist<- full_tlist[EIS.Number %in% projects$EIS.Number,]
-
 
 #####
 hash_file = paste0(scratch_loc,'eis_page_hashes.rds')
@@ -44,7 +43,7 @@ gc()
 
 
 ##### setting cores high requires a big ass computer, and still takes awhile, and sometimes a thread chokes
-mcores = 8
+mcores = 4
 #options("mc.cores" = floor(detectCores()/2))
 options("mc.cores" = mcores)
 
@@ -85,9 +84,6 @@ require(dplyr)
 candidate_splits = split(eis_candidates,ntile(1:nrow(eis_candidates),n = nrow(eis_candidates) %/% 10000))
 gc()
 
-#corpus_meta = eis_corpus$meta
-#corpus_meta$names <- names(eis_corpus)[!names(eis_corpus)%in%skipped(eis_corpus)]
-
 parallel::clusterEvalQ(cluster,'require(data.table)')
 parallel::clusterEvalQ(cluster,'require(textreuse)')
 score_list = foreach(i = candidate_splits) %dopar% {
@@ -104,5 +100,3 @@ score_dt <- score_dt[score>=300,]
 
 dir.create('boilerplate_project/data_products/score_results/')
 saveRDS(score_dt,paste0("boilerplate_project/data_products/score_results/eis_page_scores_scratch_file.rds"),compress = TRUE)
-
-

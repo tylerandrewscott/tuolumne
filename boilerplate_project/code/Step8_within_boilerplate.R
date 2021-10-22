@@ -77,6 +77,8 @@ flist_dt = readRDS('boilerplate_project/input/feis_corpus_2013-2020.rds')
   agency_summary_stats$mean = round(agency_summary_stats$mean,3)
   agency_summary_stats$median = round(agency_summary_stats$median,3)
 
+countover300$AGENCY_SHORT <- fct_infreq(countover300$AGENCY_SHORT)
+
 
     (gg_pages_over_300 = ggplot() + 
        #  geom_jitter(data = countover300,aes(x = fct_rev(AGENCY_SHORT),y = over300/total_pages),pch = 21,colour = 'grey50') + 
