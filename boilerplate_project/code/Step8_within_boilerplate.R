@@ -140,13 +140,55 @@ countover300$AGENCY_SHORT <- fct_infreq(countover300$AGENCY_SHORT)
 
   beta_mod = betareg(beta_dv~log(total_pages) + log(`Readability score`) + litigation_per_eis + 
             ideo_rating + skills_rating + DECISION + as.factor(Year) + USED_CONSULTANT,data = projects)
-    
+
+beta_coef= summary(beta_mod)$coef[[1]] %>% 
+  data.frame() %>% 
+  select('Estimate',contains('Std'),contains('Pr')) %>%
+      mutate_if(is.numeric,round,3) %>% 
+      mutate_if(is.numeric,format, nsmall = 2) %>%
+  mutate(coef = rownames(.))
+  names(beta_coef) <- c('Est.','SE','p-value','coef')
   
- summary(lm(over300/total_pages~log(total_pages) + log(`Readability score`) + litigation_per_eis + 
-                       ideo_rating + skills_rating + DECISION + as.factor(Year) + USED_CONSULTANT,data = projects))
+  beta_coef$coef = fct_recode(beta_coef$coef,'litigations per FEIS, 2001-2012' = 'litigation_per_eis',
+                               'Used consultants' = 'USED_CONSULTANT',
+                               'ln(pages)' = 'log(total_pages)',
+                               'ln(readability)' = "log(`Readability score`)",
+                               "Program/Policy" = "DECISIONProgram/policy" ,
+                               "Project" = "DECISIONProject" ,
+                                 'Ideol. rating' = "ideo_rating",
+                               'Skill rating' = "skills_rating",
+                                 '2014' = 'as.factor(Year)2014',
+                               '2015'='as.factor(Year)2015',
+                               '2016'= 'as.factor(Year)2016',
+                                '2017' = 'as.factor(Year)2017',
+                               '2018'='as.factor(Year)2018',
+                               '2019'='as.factor(Year)2019',
+                               '2020'='as.factor(Year)2020')
   
+  
+  library(gt)
+  # Create a gt table based on preprocessed
+  # `sp500` table data
+ beta_table = beta_coef %>% 
+    gt(rowname_col = "coef") %>%
+    tab_header(
+      title = "Beta regression coefficients predicting proportion high-similarity pages within EISs") %>%
+    tab_row_group(
+      label = "Year fixed effects",
+      rows = matches("[0-9]{4}")) %>%
 
-  htmlreg(beta_mod,file = 'boilerplate_project/output/tables/Table7_betaregression_results.html',single.row = T)  
+    tab_row_group(
+      label = "Agency attributes",
+      rows = matches("Skill|Ideo|litigat")) %>%
+    tab_row_group(
+      label = "EIS attributes",
+      rows = matches("pages|Used consult|policy|readabil|Project")) %>%
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = cells_body(
+        columns = c(`p-value`),
+        rows =  `p-value`< 0.05)) 
+ 
 
-
-
+  gt::gtsave(data = beta_table,filename = 'boilerplate_project/output/tables/Table7_betaregression_results.html')
+  

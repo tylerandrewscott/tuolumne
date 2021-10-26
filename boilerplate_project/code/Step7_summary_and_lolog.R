@@ -447,29 +447,58 @@ eis_mresults$coef = fct_recode(eis_mresults$coef,'litigations per FEIS, 2001-201
 eis_mresults$coef = fct_inorder(eis_mresults$coef)
 eis_mresults$coef = fct_rev(eis_mresults$coef)
 eis_mresults <- data.table(eis_mresults)
-eis_mresults[,sig:=ifelse(theta - 1.96 * se <0 & theta + 1.96 * se>0,0,1)]
-eis_mresults$mod_sig = paste0(eis_mresults$mod,eis_mresults$sig)
 
 
-eis_mresults[,CI:=paste0(sprintf("%.3f", round(theta,3)),' (',sprintf("%.3f", round(se,3)),')')]
 
+# eis_mresults[,sig:=ifelse(theta - 1.96 * se <0 & theta + 1.96 * se>0,0,1)]
+# eis_mresults$mod_sig = paste0(eis_mresults$mod,eis_mresults$sig)
+# eis_mresults[,CI:=paste0(sprintf("%.3f", round(theta,3)),' (',sprintf("%.3f", round(se,3)),')')]
 eis_mresultscoef = fct_inorder(eis_mresults$coef)
 
-eis_mresults$stars = ifelse(eis_mresults$pvalue <0.001,"***",ifelse(eis_mresults$pvalue<0.01,"**",ifelse(eis_mresults$pvalue<0.05,"*",'')))
-eis_mresults$CI  =  paste0(eis_mresults$CI,eis_mresults$stars)
+#eis_mresults$stars = ifelse(eis_mresults$pvalue <0.001,"***",ifelse(eis_mresults$pvalue<0.01,"**",ifelse(eis_mresults$pvalue<0.05,"*",'')))
+#eis_mresults$CI  =  paste0(eis_mresults$CI,eis_mresults$stars)
+# coef_cast =  eis_mresults[,.(coef,CI)]
+# coef_cast = coef_cast[order(fct_rev(coef)),]
 
+(temp_tab = eis_mresults[,.(coef,theta,se,pvalue)] %>% 
+  mutate_if(is.numeric,round,3) %>% 
+    mutate_if(is.numeric,format, nsmall = 2))
+names(temp_tab) <- c('coef','Est.','SE','p-value')
 
-coef_cast =  eis_mresults[,.(coef,CI)]
-coef_cast = coef_cast[order(fct_rev(coef)),]
+temp_tab$coef <- str_remove(temp_tab$coef,'year ')
+temp_tab$coef[temp_tab$coef=='Distance'] <- 'Geographic dist.'
+temp_tab$coef[temp_tab$coef=='gwdegree.1.5'] <- 'GW degree (decay=1.5)'
+temp_tab$coef[temp_tab$coef=='gwesp.0.4'] <- 'GWESP (decay=0.4)'
 
-outdir.tables = "boilerplate_project/output/tables/" 
-tableout <-htmlTable(coef_cast)
-outdir.tables = "boilerplate_project/output/tables/" 
-sink(paste0(outdir.tables,"Table6_eis_lolog_coefs.html"))
-print(tableout,type="html",useViewer=F)
-sink()
-
-
+library(gt)
+# Create a gt table based on preprocessed
+# `sp500` table data
+lolog_table = temp_tab %>% 
+  gt(rowname_col = "coef") %>%
+  tab_header(
+  title = "LOLOG model coefficients predicting > 3 highly similar pages between two EISs") %>%
+  tab_row_group(
+    label = "Year fixed effects",
+    rows = matches("[0-9]{4}")) %>%
+  tab_row_group(
+    label = "Dyadic attributes",
+    rows = matches("Same|Geog|date")) %>%
+tab_row_group(
+  label = "Agency attributes",
+  rows = matches("Skill|Ideo|litigat")) %>%
+  tab_row_group(
+    label = "EIS attributes",
+    rows = matches("pages|Used consult|policy|readabil|Project")) %>%
+    tab_row_group(
+      label = "Autoregressive structural terms",
+      rows = matches("GW|edges")) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_body(
+      columns = c(`p-value`),
+      rows =  `p-value`< 0.05)
+  )
+gt::gtsave(data = lolog_table,filename = 'boilerplate_project/output/tables/Table6_eis_lolog_coefs.html')
 
 
 

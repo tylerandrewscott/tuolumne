@@ -1,125 +1,477 @@
-<table class='gmisc_table' style='border-collapse: collapse; margin-top: 1em; margin-bottom: 1em;' >
-<thead>
-<tr><th style='border-bottom: 1px solid grey; border-top: 2px solid grey;'></th>
-<th style='font-weight: 900; border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>coef</th>
-<th style='font-weight: 900; border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>CI</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style='text-align: left;'>1</td>
-<td style='text-align: center;'>edges</td>
-<td style='text-align: center;'>-9.288 (2.500)***</td>
-</tr>
-<tr>
-<td style='text-align: left;'>2</td>
-<td style='text-align: center;'>gwdegree.1.5</td>
-<td style='text-align: center;'>-0.975 (0.153)***</td>
-</tr>
-<tr>
-<td style='text-align: left;'>3</td>
-<td style='text-align: center;'>gwesp.0.4</td>
-<td style='text-align: center;'>2.580 (0.114)***</td>
-</tr>
-<tr>
-<td style='text-align: left;'>4</td>
-<td style='text-align: center;'>year 2014</td>
-<td style='text-align: center;'>0.360 (0.135)**</td>
-</tr>
-<tr>
-<td style='text-align: left;'>5</td>
-<td style='text-align: center;'>year 2015</td>
-<td style='text-align: center;'>0.231 (0.129)</td>
-</tr>
-<tr>
-<td style='text-align: left;'>6</td>
-<td style='text-align: center;'>year 2016</td>
-<td style='text-align: center;'>0.142 (0.124)</td>
-</tr>
-<tr>
-<td style='text-align: left;'>7</td>
-<td style='text-align: center;'>year 2017</td>
-<td style='text-align: center;'>0.188 (0.132)</td>
-</tr>
-<tr>
-<td style='text-align: left;'>8</td>
-<td style='text-align: center;'>year 2018</td>
-<td style='text-align: center;'>0.063 (0.127)</td>
-</tr>
-<tr>
-<td style='text-align: left;'>9</td>
-<td style='text-align: center;'>year 2019</td>
-<td style='text-align: center;'>0.432 (0.122)***</td>
-</tr>
-<tr>
-<td style='text-align: left;'>10</td>
-<td style='text-align: center;'>year 2020</td>
-<td style='text-align: center;'>-0.039 (0.138)</td>
-</tr>
-<tr>
-<td style='text-align: left;'>11</td>
-<td style='text-align: center;'>ln(pages)</td>
-<td style='text-align: center;'>0.491 (0.040)***</td>
-</tr>
-<tr>
-<td style='text-align: left;'>12</td>
-<td style='text-align: center;'>Same agency</td>
-<td style='text-align: center;'>3.227 (0.101)***</td>
-</tr>
-<tr>
-<td style='text-align: left;'>13</td>
-<td style='text-align: center;'>Used consultants</td>
-<td style='text-align: center;'>0.343 (0.080)***</td>
-</tr>
-<tr>
-<td style='text-align: left;'>14</td>
-<td style='text-align: center;'>Skill rating</td>
-<td style='text-align: center;'>-0.064 (0.054)</td>
-</tr>
-<tr>
-<td style='text-align: left;'>15</td>
-<td style='text-align: center;'>Ideol. rating</td>
-<td style='text-align: center;'>-0.151 (0.033)***</td>
-</tr>
-<tr>
-<td style='text-align: left;'>16</td>
-<td style='text-align: center;'>litigations per FEIS, 2001-2012</td>
-<td style='text-align: center;'>-0.397 (0.053)***</td>
-</tr>
-<tr>
-<td style='text-align: left;'>17</td>
-<td style='text-align: center;'>|publication date diff.|</td>
-<td style='text-align: center;'>-0.453 (0.031)***</td>
-</tr>
-<tr>
-<td style='text-align: left;'>18</td>
-<td style='text-align: center;'>Program/policy</td>
-<td style='text-align: center;'>-0.203 (0.082)*</td>
-</tr>
-<tr>
-<td style='text-align: left;'>19</td>
-<td style='text-align: center;'>Project</td>
-<td style='text-align: center;'>-0.076 (0.098)</td>
-</tr>
-<tr>
-<td style='text-align: left;'>20</td>
-<td style='text-align: center;'>ln(readability)</td>
-<td style='text-align: center;'>-0.204 (0.335)</td>
-</tr>
-<tr>
-<td style='text-align: left;'>21</td>
-<td style='text-align: center;'>Same preparer(s)</td>
-<td style='text-align: center;'>0.551 (0.033)***</td>
-</tr>
-<tr>
-<td style='text-align: left;'>22</td>
-<td style='text-align: center;'>Same consultant(s)</td>
-<td style='text-align: center;'>0.965 (0.147)***</td>
-</tr>
-<tr>
-<td style='border-bottom: 2px solid grey; text-align: left;'>23</td>
-<td style='border-bottom: 2px solid grey; text-align: center;'>Distance</td>
-<td style='border-bottom: 2px solid grey; text-align: center;'>-0.028 (0.004)***</td>
-</tr>
-</tbody>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<style>body{background-color:white;}</style>
+
+
+</head>
+<body>
+<div id="dqmodnrpau" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+  <style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#dqmodnrpau .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#dqmodnrpau .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#dqmodnrpau .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#dqmodnrpau .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 6px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#dqmodnrpau .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#dqmodnrpau .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#dqmodnrpau .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#dqmodnrpau .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#dqmodnrpau .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#dqmodnrpau .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#dqmodnrpau .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#dqmodnrpau .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#dqmodnrpau .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#dqmodnrpau .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#dqmodnrpau .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#dqmodnrpau .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#dqmodnrpau .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#dqmodnrpau .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#dqmodnrpau .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#dqmodnrpau .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#dqmodnrpau .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#dqmodnrpau .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#dqmodnrpau .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#dqmodnrpau .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#dqmodnrpau .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#dqmodnrpau .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#dqmodnrpau .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#dqmodnrpau .gt_left {
+  text-align: left;
+}
+
+#dqmodnrpau .gt_center {
+  text-align: center;
+}
+
+#dqmodnrpau .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#dqmodnrpau .gt_font_normal {
+  font-weight: normal;
+}
+
+#dqmodnrpau .gt_font_bold {
+  font-weight: bold;
+}
+
+#dqmodnrpau .gt_font_italic {
+  font-style: italic;
+}
+
+#dqmodnrpau .gt_super {
+  font-size: 65%;
+}
+
+#dqmodnrpau .gt_footnote_marks {
+  font-style: italic;
+  font-weight: normal;
+  font-size: 65%;
+}
+</style>
+  <table class="gt_table">
+  <thead class="gt_header">
+    <tr>
+      <th colspan="4" class="gt_heading gt_title gt_font_normal gt_bottom_border" style>LOLOG model coefficients predicting &gt; 3 highly similar pages between two EISs</th>
+    </tr>
+    
+  </thead>
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1"></th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1">Est.</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1">SE</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1">p-value</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr class="gt_group_heading_row">
+      <td colspan="4" class="gt_group_heading">Autoregressive structural terms</td>
+    </tr>
+    <tr><td class="gt_row gt_left gt_stub">edges</td>
+<td class="gt_row gt_left">-9.288</td>
+<td class="gt_row gt_left">2.500</td>
+<td class="gt_row gt_left" style="font-weight: bold;">0.000</td></tr>
+    <tr><td class="gt_row gt_left gt_stub">GW degree (decay=1.5)</td>
+<td class="gt_row gt_left">-0.975</td>
+<td class="gt_row gt_left">0.153</td>
+<td class="gt_row gt_left" style="font-weight: bold;">0.000</td></tr>
+    <tr><td class="gt_row gt_left gt_stub">GWESP (decay=0.4)</td>
+<td class="gt_row gt_left"> 2.580</td>
+<td class="gt_row gt_left">0.114</td>
+<td class="gt_row gt_left" style="font-weight: bold;">0.000</td></tr>
+    <tr class="gt_group_heading_row">
+      <td colspan="4" class="gt_group_heading">EIS attributes</td>
+    </tr>
+    <tr><td class="gt_row gt_left gt_stub">ln(pages)</td>
+<td class="gt_row gt_left"> 0.491</td>
+<td class="gt_row gt_left">0.040</td>
+<td class="gt_row gt_left" style="font-weight: bold;">0.000</td></tr>
+    <tr><td class="gt_row gt_left gt_stub">Used consultants</td>
+<td class="gt_row gt_left"> 0.343</td>
+<td class="gt_row gt_left">0.080</td>
+<td class="gt_row gt_left" style="font-weight: bold;">0.000</td></tr>
+    <tr><td class="gt_row gt_left gt_stub">Program/policy</td>
+<td class="gt_row gt_left">-0.203</td>
+<td class="gt_row gt_left">0.082</td>
+<td class="gt_row gt_left" style="font-weight: bold;">0.014</td></tr>
+    <tr><td class="gt_row gt_left gt_stub">Project</td>
+<td class="gt_row gt_left">-0.076</td>
+<td class="gt_row gt_left">0.098</td>
+<td class="gt_row gt_left">0.440</td></tr>
+    <tr><td class="gt_row gt_left gt_stub">ln(readability)</td>
+<td class="gt_row gt_left">-0.204</td>
+<td class="gt_row gt_left">0.335</td>
+<td class="gt_row gt_left">0.542</td></tr>
+    <tr class="gt_group_heading_row">
+      <td colspan="4" class="gt_group_heading">Agency attributes</td>
+    </tr>
+    <tr><td class="gt_row gt_left gt_stub">Skill rating</td>
+<td class="gt_row gt_left">-0.064</td>
+<td class="gt_row gt_left">0.054</td>
+<td class="gt_row gt_left">0.234</td></tr>
+    <tr><td class="gt_row gt_left gt_stub">Ideol. rating</td>
+<td class="gt_row gt_left">-0.151</td>
+<td class="gt_row gt_left">0.033</td>
+<td class="gt_row gt_left" style="font-weight: bold;">0.000</td></tr>
+    <tr><td class="gt_row gt_left gt_stub">litigations per FEIS, 2001-2012</td>
+<td class="gt_row gt_left">-0.397</td>
+<td class="gt_row gt_left">0.053</td>
+<td class="gt_row gt_left" style="font-weight: bold;">0.000</td></tr>
+    <tr class="gt_group_heading_row">
+      <td colspan="4" class="gt_group_heading">Dyadic attributes</td>
+    </tr>
+    <tr><td class="gt_row gt_left gt_stub">Same agency</td>
+<td class="gt_row gt_left"> 3.227</td>
+<td class="gt_row gt_left">0.101</td>
+<td class="gt_row gt_left" style="font-weight: bold;">0.000</td></tr>
+    <tr><td class="gt_row gt_left gt_stub">|publication date diff.|</td>
+<td class="gt_row gt_left">-0.453</td>
+<td class="gt_row gt_left">0.031</td>
+<td class="gt_row gt_left" style="font-weight: bold;">0.000</td></tr>
+    <tr><td class="gt_row gt_left gt_stub">Same preparer(s)</td>
+<td class="gt_row gt_left"> 0.551</td>
+<td class="gt_row gt_left">0.033</td>
+<td class="gt_row gt_left" style="font-weight: bold;">0.000</td></tr>
+    <tr><td class="gt_row gt_left gt_stub">Same consultant(s)</td>
+<td class="gt_row gt_left"> 0.965</td>
+<td class="gt_row gt_left">0.147</td>
+<td class="gt_row gt_left" style="font-weight: bold;">0.000</td></tr>
+    <tr><td class="gt_row gt_left gt_stub">Geographic dist.</td>
+<td class="gt_row gt_left">-0.028</td>
+<td class="gt_row gt_left">0.004</td>
+<td class="gt_row gt_left" style="font-weight: bold;">0.000</td></tr>
+    <tr class="gt_group_heading_row">
+      <td colspan="4" class="gt_group_heading">Year fixed effects</td>
+    </tr>
+    <tr><td class="gt_row gt_left gt_stub">2014</td>
+<td class="gt_row gt_left"> 0.360</td>
+<td class="gt_row gt_left">0.135</td>
+<td class="gt_row gt_left" style="font-weight: bold;">0.008</td></tr>
+    <tr><td class="gt_row gt_left gt_stub">2015</td>
+<td class="gt_row gt_left"> 0.231</td>
+<td class="gt_row gt_left">0.129</td>
+<td class="gt_row gt_left">0.074</td></tr>
+    <tr><td class="gt_row gt_left gt_stub">2016</td>
+<td class="gt_row gt_left"> 0.142</td>
+<td class="gt_row gt_left">0.124</td>
+<td class="gt_row gt_left">0.250</td></tr>
+    <tr><td class="gt_row gt_left gt_stub">2017</td>
+<td class="gt_row gt_left"> 0.188</td>
+<td class="gt_row gt_left">0.132</td>
+<td class="gt_row gt_left">0.154</td></tr>
+    <tr><td class="gt_row gt_left gt_stub">2018</td>
+<td class="gt_row gt_left"> 0.063</td>
+<td class="gt_row gt_left">0.127</td>
+<td class="gt_row gt_left">0.619</td></tr>
+    <tr><td class="gt_row gt_left gt_stub">2019</td>
+<td class="gt_row gt_left"> 0.432</td>
+<td class="gt_row gt_left">0.122</td>
+<td class="gt_row gt_left" style="font-weight: bold;">0.000</td></tr>
+    <tr><td class="gt_row gt_left gt_stub">2020</td>
+<td class="gt_row gt_left">-0.039</td>
+<td class="gt_row gt_left">0.138</td>
+<td class="gt_row gt_left">0.776</td></tr>
+  </tbody>
+  
+  
 </table>
+</div>
+</body>
+</html>
