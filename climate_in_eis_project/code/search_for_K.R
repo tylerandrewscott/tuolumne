@@ -1,28 +1,18 @@
 
-packs = c('stm','data.table','stringr','readtext','pbapply','maps','quanteda','tm')
+packs = c('stm','data.table','stringr','readtext','pbapply','maps','quanteda','tm','lubridate')
 sapply(packs[!sapply(packs,require,character.only = T)],install.packages)
-sapply(packs,require)
+sapply(packs,require,character.only = T)
 
 redraw_corpus = TRUE
 
-projs = readRDS('scratch/climate_in_nepa/eis_metadata.RDS')
-docs = readRDS('scratch/climate_in_nepa/eis_doc_metadata.RDS')
+projs = readRDS('climate_in_eis_project/data_products/eis_metadata_with_covariates.RDS')
+docs = readRDS('climate_in_eis_project/data_products/eis_doc_metadata.RDS')
 
-projs$TYPE <- NA
-projs$TYPE[grepl('Project\\b|Projects\\b|Building|Improvement|Expansion|Modernization|Corridor|Bypass|LNG|Crossing|I-[0-9]{1,}|I[0-9]{1,}|Connector|Railroad|Xpressway|Rail\\b|Expressway|Mine\\b|Extension|Facility|Station|Addition|Interchange',projs$Title)]<-'Project'
-projs$TYPE[grepl('Plan\\b|Plans\\b|RMP|Blueprint|Strategy|Initiatives',projs$Title)]<-'Plan'
-projs$TYPE[grepl('License|Permit|Exchange|Lease\\b|Leasing\\b|Acquisition',projs$Title)]<-'License/Permit/Leasing'
-projs$TYPE[grepl('Programmatic|PROGRAMMATIC|Regulation|Rule\\b|Standards\\b|Designation\\b|Rulemaking|Determination|Amendment',projs$Title)]<-'Programmatic'
-projs$TYPE[grepl('Feasibility|Study|Policy Review|Risk Management|Re-Evaluation',projs$Title)]<-'Study'
-projs$TYPE[grepl('Maintenance|Operations|Management (?!Plan)|Program\\b|Control\\b|Training|Testing|Programs\\b|Beddown|Vegetation Management',projs$Title,perl = T)]<-'Maintenance/Operations'
-projs$TYPE[grepl('Restoration\\b|Remediation\\b|Residual|Fuels Management|Salvage|Reforestation',projs$Title,perl = T)]<-'Remediation/Restoration'
-projs$TYPE[is.na(projs$TYPE)]<- 'Other'
-require(lubridate)
 projs$DEC_DATE = decimal_date(mdy(projs$Federal.Register.Date))-2013
 
 projs$STATE <- ifelse(nchar(projs$State.or.Territory)==2,projs$State.or.Territory,'Multi/Programmatic')
 
-quanteda_toks = list.files('scratch/climate_in_nepa/yearly_quanteda_tokens/',full.names = T)
+quanteda_toks = list.files('climate_in_eis_project/yearly_quanteda_tokens/',full.names = T)
 tok_list = lapply(quanteda_toks,readRDS)
 
 #tok_all = tok_all + tok_list[[8]]
