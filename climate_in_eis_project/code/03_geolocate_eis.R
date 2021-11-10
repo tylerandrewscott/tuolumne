@@ -4,7 +4,7 @@ need = pack[!pack %in% installed.packages()[,'Package']]
 lapply(need,install.packages)
 lapply(pack,require,character.only=T)
 
-projects = readRDS('climate_in_eis_project/data_products/eis_metadata_with_covariates.RDS')
+projects = readRDS('climate_in_eis_project/data_products/deis_metadata_with_covariates.RDS')
 
 
 #spacy_install(conda = "auto", version = "latest", lang_models = "en",

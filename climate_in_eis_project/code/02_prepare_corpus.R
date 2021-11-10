@@ -14,16 +14,16 @@ sapply(packs,require,character.only = T)
 
 redraw_corpus = TRUE
 
-projs = readRDS('scratch/climate_in_nepa/eis_metadata.RDS')
-docs = readRDS('scratch/climate_in_nepa/eis_doc_metadata.RDS')
-
+projs = readRDS('climate_in_eis_project/data_products/deis_metadata_with_covariates.RDS')
+docs = readRDS('climate_in_eis_project/data_products/deis_doc_metadata.RDS')
 
 text_loc = 'climate_in_eis_project/input/'
 flist = list.files(text_loc,pattern = 'corpus')
 
-
 dir.create('climate_in_eis_project/scratch')
 storage = 'climate_in_eis_project/yearly_quanteda_tokens/'
+
+
 dir.create(storage)
 cities = str_remove(maps::us.cities$name,'\\s[A-Z]{2}$')
 counties = str_to_title(str_remove(maps::county.fips$polyname,'^.*\\,'))
@@ -46,7 +46,7 @@ special_stopwords = c(cities,counties,state.name,agency_set)
 stopword_breaks = paste0('\\b',special_stopwords,'\\b')
 stopword_splits = split(stopword_breaks,dplyr::ntile(stopword_breaks,n = 40))
 stopword_splits <- lapply(stopword_splits,paste,collapse = '|')
-replace_toks = F
+replace_toks = T
 for(corpus_name in flist){
   year <- str_extract(corpus_name,'[0-9]{4}')
   corp_file = paste0(storage,'tokens_',year,'.RDS')
@@ -54,6 +54,8 @@ for(corpus_name in flist){
   if(!file.exists(corp_file)|replace_toks){
     print(corpus_name)
     temp = readRDS(paste0(text_loc,corpus_name))
+    temp = temp[str_extract(File,'^[0-9]{8}') %in% projs$EIS.Number,]
+  
     clean_temp = FindCleanPages(temp)
     page_list = vector()
     
@@ -80,8 +82,8 @@ for(corpus_name in flist){
     compound_words = c("greenhouse gas*",'climate change*','global warming','carbon emission*','climate impact*','ocean acidification*',
                        'alternative energy','anthropogenic emissions','carbon dioxide','extreme weather','storm surge',
                        'adaptive capacity','adaptation costs','renewable energy','sea level rise',
-                       'sealevel rise','air quality','water quality','invasive species','land use',
-                       'environmental impact statement*')
+                       'sealevel rise','air quality','water quality','invasive species','land use','marine heat wave*',
+                       'environmental impact statement*','flood control','heat wave*','atmospheric river*')
     toks = tokens_select(toks,min_nchar = 3,max_nchar = max(nchar(compound_words)))
     toks = tokens_compound(toks,pattern = phrase(compound_words))
     saveRDS(toks,paste0(storage,'tokens_',year,'.RDS'))
