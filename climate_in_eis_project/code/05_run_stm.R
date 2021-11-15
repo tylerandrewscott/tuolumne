@@ -23,30 +23,54 @@ for(t in tok_list[-1]){
 }
 
 qdfm = dfm(tok_all)
-qdfm_freq <- dfm_trim(qdfm, min_docfreq = 2)
-qdfm_freq <- dfm_trim(qdfm_freq, max_docfreq = 0.05,docfreq_type = 'prop')
+qdfm_eis <- dfm_group(qdfm,str_extract(qdfm@Dimnames$docs,'^[0-9]{8}'))
+qdfm_eis <- dfm_trim(qdfm_eis,min_docfreq = 3) 
+eis3 <- qdfm_eis@Dimnames$features
+qdfm <- qdfm[,qdfm@Dimnames$features %in% eis3]
 
-meta_eis = projs[match(str_remove(qdfm_freq@Dimnames$docs,'_.*'),projs$EIS.Number),]
+
+qdfm <- dfm_trim(qdfm, max_docfreq = 0.3,docfreq_type = 'prop')
+qdfm_stem = dfm_wordstem(qdfm)
+qdfm_stem <- qdfm_stem[ntoken(qdfm_stem)>0,]
+
+meta_eis = projs[match(str_remove(qdfm_stem@Dimnames$docs,'_.*'),projs$EIS.Number),]
 meta_eis$EIS.Number <- as.character(meta_eis$EIS.Number)
-meta_eis$ID = qdfm_freq@Dimnames$docs
+meta_eis$ID = qdfm_stem@Dimnames$docs
 
 K = 90
-dfm2stm <- convert(qdfm_freq, to = "stm")
+dfm2stm <- convert(qdfm_stem, to = "stm")
 meta_eis_sub = meta_eis[ID %in% names(dfm2stm$documents),]
 meta_eis_sub$YEAR = str_extract(meta_eis_sub$EIS.Number,'^[0-9]{4}')
 dfm2stm$meta = meta_eis_sub
+
 
 dfm2stm$meta$project_EAL[is.na(dfm2stm$meta$project_EAL)] <- median(dfm2stm$meta$project_EAL,na.rm = T)
 dfm2stm$meta$project_CR[is.na(dfm2stm$meta$project_CR)] <- median(dfm2stm$meta$project_CR,na.rm = T)
 dfm2stm$meta$project_SVI[is.na(dfm2stm$meta$project_SVI)] <- median(dfm2stm$meta$project_SVI,na.rm = T)
 
 #use k = 0 to automate guess to understand range of k
-model.stm <- stm(dfm2stm$documents, dfm2stm$vocab, K = K, data = dfm2stm$meta,
+model.base <- stm(dfm2stm$documents, dfm2stm$vocab, K = 0, data = dfm2stm$meta,
+                 prevalence = ~EIS.Number, init.type = "Spectral",verbose = T,#ngroups = 5,
+                 seed = 24,max.em.its = 20,emtol = 0.0001) 
+saveRDS(model.base,'climate_in_eis_project/scratch/base_stm_searchk.RDS')
+
+
+model.stm <- stm(dfm2stm$documents, dfm2stm$vocab, K = 0, data = dfm2stm$meta,
        prevalence = ~EIS.Number + AGENCY + YEAR + PROJECT_TYPE + PROJECT_TOPIC+
           s(project_EAL) + s(project_SVI) + s(project_CR),
                  init.type = "Spectral",verbose = T,
-                 seed = 24,max.em.its = 40,emtol = 0.0001) 
-# saveRDS(model.stm,paste0(where_is_scratch,'temp_stm_90k.RDS'))
+                 seed = 24,max.em.its = 20,emtol = 0.0001) 
+saveRDS(model.stm,'climate_in_eis_project/scratch/temp_stm_90k.RDS')
+
+other.stm <- lapply(c(30,45,60,75,105,120),function(k) {
+  stm(dfm2stm$documents, dfm2stm$vocab, K = k, data = dfm2stm$meta,
+      prevalence = ~EIS.Number + AGENCY + YEAR + PROJECT_TYPE + PROJECT_TOPIC+
+        s(project_EAL) + s(project_SVI) + s(project_CR),
+      init.type = "Spectral",verbose = T,ngroups = 5,
+      seed = 24,max.em.its = 40,emtol = 0.0001) 
+})
+saveRDS(other.stm ,'climate_in_eis_project/scratch/temp_stm_Ksensitivity.RDS')
+
 
 model.stm = readRDS(paste0(where_is_scratch,'temp_stm_90k.RDS'))
 
