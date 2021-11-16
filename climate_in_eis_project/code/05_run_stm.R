@@ -37,7 +37,7 @@ meta_eis = projs[match(str_remove(qdfm_stem@Dimnames$docs,'_.*'),projs$EIS.Numbe
 meta_eis$EIS.Number <- as.character(meta_eis$EIS.Number)
 meta_eis$ID = qdfm_stem@Dimnames$docs
 
-K = 90
+
 dfm2stm <- convert(qdfm_stem, to = "stm")
 meta_eis_sub = meta_eis[ID %in% names(dfm2stm$documents),]
 meta_eis_sub$YEAR = str_extract(meta_eis_sub$EIS.Number,'^[0-9]{4}')
@@ -51,16 +51,38 @@ dfm2stm$meta$project_SVI[is.na(dfm2stm$meta$project_SVI)] <- median(dfm2stm$meta
 #use k = 0 to automate guess to understand range of k
 model.base <- stm(dfm2stm$documents, dfm2stm$vocab, K = 0, data = dfm2stm$meta,
                  prevalence = ~EIS.Number, init.type = "Spectral",verbose = T,#ngroups = 5,
-                 seed = 24,max.em.its = 20,emtol = 0.0001) 
+                 seed = 24,max.em.its = 40,emtol = 0.0001) 
 saveRDS(model.base,'climate_in_eis_project/scratch/base_stm_searchk.RDS')
 
+K = 80
+model.base <- stm(dfm2stm$documents, dfm2stm$vocab, K = K, data = dfm2stm$meta,
+                  prevalence = ~EIS.Number, init.type = "Spectral",verbose = T,#ngroups = 5,
+                  seed = 24,max.em.its = 40,emtol = 0.0001) 
+saveRDS(model.base,'climate_in_eis_project/scratch/base_stm_80k.RDS')
 
+
+model.cov <- stm(dfm2stm$documents, dfm2stm$vocab, K = K, data = dfm2stm$meta,
+                 prevalence = ~EIS.Number + AGENCY + YEAR + PROJECT_TYPE + PROJECT_TOPIC+
+                   s(project_EAL) + s(project_SVI) + s(project_CR),
+                 init.type = "Spectral",verbose = T,#ngroups = 5,
+                  seed = 24,max.em.its = 40,emtol = 0.0001) 
+saveRDS(model.cov,'climate_in_eis_project/scratch/base_stm_80k.RDS')
+
+
+model.base.continue$theta
+
+
+model.base.continue$settings
+str(model.base.continue)
 model.stm <- stm(dfm2stm$documents, dfm2stm$vocab, K = 0, data = dfm2stm$meta,
        prevalence = ~EIS.Number + AGENCY + YEAR + PROJECT_TYPE + PROJECT_TOPIC+
           s(project_EAL) + s(project_SVI) + s(project_CR),
                  init.type = "Spectral",verbose = T,
                  seed = 24,max.em.its = 20,emtol = 0.0001) 
 saveRDS(model.stm,'climate_in_eis_project/scratch/temp_stm_90k.RDS')
+
+
+
 
 other.stm <- lapply(c(30,45,60,75,105,120),function(k) {
   stm(dfm2stm$documents, dfm2stm$vocab, K = k, data = dfm2stm$meta,
