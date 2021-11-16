@@ -54,12 +54,15 @@ categories<-c("Distance"="Type and Size",
 vi_scores<-outresult3[[4]] %>% vip::vi()
 vi_scores<-vi_scores %>% mutate(Type=revalue(Variable,categories))
 vi_scores$Variable<-ordered(vi_scores$Variable,vi_scores$Variable)
+
+#vi scores for main model (1km)
 vi_scores %>% ggplot()+geom_bar(aes(x=Variable,y=Importance,fill=Type),stat="identity")+coord_flip()+ggthemes::scale_fill_tableau()+theme_minimal()+theme(legend.position=c(.5,.7),text=element_text(size=20))
 
 vi_scores_sensitive<-outresult3_sensitive[[4]] %>% vip::vi()
 vi_scores_sensitive<-vi_scores_sensitive %>% mutate(Type=revalue(Variable,categories))
 vi_scores_sensitive$Variable<-ordered(vi_scores_sensitive$Variable,vi_scores_sensitive$Variable)
   
+#vi_scores_1km to no distance
 rbind(vi_scores %>% mutate(model="Distance variable included"),vi_scores_sensitive %>% mutate(model="No distance variable")) %>% ggplot()+geom_bar(aes(x=Variable,y=Importance,fill=Type),stat="identity")+coord_flip()+ggthemes::scale_fill_tableau()+theme_minimal()+facet_wrap(~model)
 
 
@@ -69,7 +72,7 @@ names(temp)<-c("  50m"," 250m"," 500m","1km","2km")
 temp<-temp %>% bind_rows(.id="buffer")  %>% mutate(Type=revalue(Variable,categories),Variable=ordered(as.character(Variable),c(as.character(vi_scores$Variable),"NPS Ownership","Existing"))) 
 temp %>% ggplot()+geom_bar(aes(x=Variable,y=Importance,fill=Type),stat="identity")+coord_flip()+ggthemes::scale_fill_tableau()+theme_minimal()+theme(legend.position=c(.8,.2),text=element_text(size=20))+facet_wrap(~buffer)
 
-
+#vi scores full no distance
 temp<-lapply(1:5, function(X) outresult3_sensitive[[X]] %>% prune(cp=.01) %>% vip::vi())
 names(temp)<-c("  50m"," 250m"," 500m","1km","2km")
 temp<-temp %>% bind_rows(.id="buffer")  %>% mutate(Type=revalue(Variable,categories),Variable=ordered(as.character(Variable),c(as.character(vi_scores_sensitive$Variable),"Existing","State Ownership","Pres. Party","FWS Ownership"))) 
@@ -101,24 +104,7 @@ ggsave("treeout.png",plot=temp2,height=7,width=10,dpi=300)
 
 library(ggparty)
 
-subfarme2<-data.frame("from"=smallmodel$data$breaks_label %>% stringr::str_extract(.,"[0-9.]+"),"to"=smallmodel$data$breaks_label %>% stringr::str_extract(.,"[0-9.]+") %>% as.numeric() %>% round(.,2))
-smallmodel$data$breaks_label<-sapply(1:nrow(subfarme2), function(X) gsub(subfarme2$from[X],subfarme2$to[X],smallmodel$data$breaks_label[X]))
-
-
-temp3<- smallmodel+
-  geom_edge() +
-  geom_edge_label(mapping = aes(label = !!sym("breaks_label"))) +
-  #geom_node_label(aes(label = splitvar), ids = "inner") +
-  geom_node_label(aes(label = paste0(splitvar,", N = ", nodesize)),ids="inner")+
-  geom_node_label(aes(label = paste0("N = ", nodesize)),ids="terminal")+
-  # identical to  geom_node_splitvar() +
-  geom_node_plot(gglist = list(geom_bar(aes(x = "", fill = `Study Type`),position = position_fill()),scale_fill_manual(values=c("grey","black")),theme_minimal(),xlab(""),ylab("proportion")),
-                 # draw individual legend for each plot
-                 shared_legend = T
-  )+theme(text=element_text(size=20)) 
-
-temp3
-
+#plot map of lines
 ggplot(tidycensus::state_laea)+geom_sf(fill="white",colour="black",size=.1)+geom_sf(data=blmdoeshape2 %>% dplyr::filter(yearnum>2004) %>% st_simplify(),aes(fill=Doc_Type,colour=Doc_Type))+ggthemes::theme_map()+scale_fill_manual(name="Study Type", values=c("grey","black"))+scale_colour_manual(name="Study Type",values=c("grey","black"))
 ggsave("linemap.png",dpi=300)
 
