@@ -1,11 +1,10 @@
 
-packs = c('sf','ggparty','rpart','partykit','caret','tidyverse','ROCR','stringr','data.table','vip','ggthemes','forcats')
+packs = c('sf','ggparty','rpart','partykit','caret','tidyverse','ROCR','stringr','data.table','vip','ggthemes','forcats','texreg','pROC')
 have = sapply(packs,require,character.only = T)
 lapply(packs[!have],install.packages)
 sapply(packs[!have],require,character.only = T)
 set.seed(1984)
-
-dir = 'transmission_lines/'
+dir = 'Documents/GitHub/tuolumne/transmission_lines/'
 flist = list.files(paste0(dir,'data_products/'),pattern = 'finaldataset',full.name = T)
 flist = flist[as.numeric(str_extract(flist,'[0-9]{1,}')) <= 2000]
 flist <- data.table(flist,as.numeric(str_extract(flist,'[0-9]{1,}')))[order(V2)]$flist
@@ -195,8 +194,8 @@ htmlreg(list(tr.coef,  tr.pv,
 library(ROCR)
 
 
-
-X = 1000
+blmdoeshape2$buffer
+X = "1000m"
 modeldatasubst<-blmdoeshape2  %>% as.data.frame() %>% 
     mutate(existing=as.factor(existing>=3),distance=distance/1000,newarea=as.numeric(newarea),
            "Population Density"=population10/newarea,"Critical Habitat"=crithabcount,"Water NRI&WSR"=surfacewater.nri) %>% 
@@ -209,10 +208,12 @@ partmod_5split <- rpart(formula1,data=modeldatasubst,minsplit = 5)
 EIS<-(modeldatasubst_logit$`Study Type`=='EIS')+0
 keep <- !is.na(modeldatasubst_logit$`Distance km`)
 treeROC <- roc(EIS,predict(outresult3$`1000m`, type = "prob")[, 2])
+
+
 tree5splitROC <- roc(EIS,predict(partmod_5split, type = "prob")[, 2])
 logitROC <- roc(EIS[keep],predict(binQuad))
 
-lbs = paste0(c('logit (auc = ','tree (20 splot) (auc = ','tree (5 split) (auc = '),
+lbs = paste0(c('logit (auc = ','tree (20 split) (auc = ','tree (5 split) (auc = '),
              round(c(logitROC$auc,treeROC$auc,tree5splitROC$auc),3),
              c(')'))
 
@@ -299,9 +300,4 @@ ggplot(md,aes(y = log(Distance+0.1),x = as.factor(EIS))) +
   geom_boxplot()
 
 
-formula1<-`Study Type`~.
-test = rpart(formula1,data=modeldatasubst,)
-
-
-?rpart
 
