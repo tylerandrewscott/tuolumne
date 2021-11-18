@@ -69,11 +69,6 @@ model.cov <- stm(dfm2stm$documents, dfm2stm$vocab, K = K, data = dfm2stm$meta,
 saveRDS(model.cov,'climate_in_eis_project/scratch/base_stm_80k.RDS')
 
 
-model.base.continue$theta
-
-
-model.base.continue$settings
-str(model.base.continue)
 model.stm <- stm(dfm2stm$documents, dfm2stm$vocab, K = 0, data = dfm2stm$meta,
        prevalence = ~EIS.Number + AGENCY + YEAR + PROJECT_TYPE + PROJECT_TOPIC+
           s(project_EAL) + s(project_SVI) + s(project_CR),
