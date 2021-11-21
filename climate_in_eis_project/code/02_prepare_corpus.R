@@ -1,5 +1,5 @@
-
-
+library(data.table)
+library(parallel)
 #devtools::install_github("quanteda/spacyr", build_vignettes = FALSE)
 library("spacyr")
 #spacy_install()
@@ -46,9 +46,18 @@ special_stopwords = c(cities,counties,state.name,agency_set)
 stopword_breaks = paste0('\\b',special_stopwords,'\\b')
 stopword_splits = split(stopword_breaks,dplyr::ntile(stopword_breaks,n = 40))
 stopword_splits <- lapply(stopword_splits,paste,collapse = '|')
+custom_stops <- c('environmental impact assessment','environmental impact statement',
+  'analysis','impact','action','alternatives','table','result','public','study','state','associated','eis','significant',
+                  'however','can','chapter','figure')
+#stopwords_regex = paste(custom_stops, collapse = '\\b|\\b')
+#stopwords_regex = paste0('\\b', stopwords_regex, '\\b')
+custom_stops = paste0('\\b',custom_stops,'\\b')
+stopword_splits[[length(stopword_splits)+1]] <- paste(custom_stops,collapse = '|')
 replace_toks = T
 for(corpus_name in flist){
+  corpus_name <- flist[1]
   year <- str_extract(corpus_name,'[0-9]{4}')
+  
   corp_file = paste0(storage,'tokens_',year,'.RDS')
   
   if(!file.exists(corp_file)|replace_toks){
@@ -58,8 +67,7 @@ for(corpus_name in flist){
   
     clean_temp = FindCleanPages(temp)
     page_list = vector()
-    
-    dim(temp)
+  
     pages = clean_temp$text
     
     ##### this isn't something that should be parallelized (I think) because editing simultaneously poses some aggregation issues
@@ -67,21 +75,24 @@ for(corpus_name in flist){
       print(i)
       pages = str_remove_all(pages,pattern = stopword_splits[[i]])
     }
-    
-    
     pages = tolower(pages)
+    pages = stringr::str_replace_all(pages, stopwords_regex, '')
     pages = removePunctuation(pages)
     pages = removeNumbers(pages)
-    
-    clean_temp$text <- pages
-    
+    clean_temp[,text:=pages]
+    source('climate_in_eis_project/code/functions/splitWords.R')
+    vSplit <- Vectorize(splitWords)
+    clean_temp[,text:=vSplit(text)]
     corp = corpus(clean_temp$text,docnames = clean_temp$File,docvars = clean_temp[,.(File,Page)],unique_docnames = F)
-    
     toks = tokens(corp,remove_symbols = T,split_hyphens = F,padding = F,remove_url = T)
     toks = tokens_select(toks,pattern = stopwords("en"),selection = 'remove')
     compound_words = c("greenhouse gas*",'climate change*','global warming','carbon emission*','climate impact*','ocean acidification*',
                        'alternative energy','anthropogenic emissions','carbon dioxide','extreme weather','storm surge',
-                       'adaptive capacity','adaptation costs','renewable energy','sea level rise',
+                       'adaptive capacit*','adaptation cost*','renewable energy','sea level rise',
+                       'extreme heat','atmospheric river','paris agreement',
+                       'renewable energy','solar energy','wind energy','geothermal energy',
+                       'fossil fuel*','natural gas','climate mitigat*','climate adapt*',
+                       'severe weather',
                        'sealevel rise','air quality','water quality','invasive species','land use','marine heat wave*',
                        'environmental impact statement*','flood control','heat wave*','atmospheric river*')
     toks = tokens_select(toks,min_nchar = 3,max_nchar = max(nchar(compound_words)))
@@ -89,6 +100,8 @@ for(corpus_name in flist){
     saveRDS(toks,paste0(storage,'tokens_',year,'.RDS'))
   }
 }
+
+
 
 
 
