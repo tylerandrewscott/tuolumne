@@ -1,16 +1,16 @@
-library(data.table)
-library(parallel)
-#devtools::install_github("quanteda/spacyr", build_vignettes = FALSE)
-library("spacyr")
+
+packs = c('stm','data.table','stringr','readtext','pbapply','maps','quanteda','tm','parallel','devtools','tokenizers','hunspell','rvest','dplyr')
+sapply(packs[!sapply(packs,require,character.only = T)],install.packages)
+sapply(packs,require,character.only = T)
+if(!require(spacyr)){devtools::install_github("quanteda/spacyr", build_vignettes = FALSE);library("spacyr")}
+
+### might need to run this to install miniconda 
+### perhaps come back and hard wire this
 #spacy_install()
 spacy_initialize()
 
-require(tokenizers);require(rvest)
 
 source('climate_in_eis_project/code/functions/FindCleanPages.R')
-packs = c('stm','data.table','stringr','readtext','pbapply','maps','quanteda','tm')
-sapply(packs[!sapply(packs,require,character.only = T)],install.packages)
-sapply(packs,require,character.only = T)
 
 redraw_corpus = TRUE
 
@@ -22,8 +22,6 @@ flist = list.files(text_loc,pattern = 'corpus')
 
 dir.create('climate_in_eis_project/scratch')
 storage = 'climate_in_eis_project/yearly_quanteda_tokens/'
-
-
 dir.create(storage)
 cities = str_remove(maps::us.cities$name,'\\s[A-Z]{2}$')
 counties = str_to_title(str_remove(maps::county.fips$polyname,'^.*\\,'))
@@ -43,46 +41,54 @@ agency_lists = lapply(letter_pages, function(x) x %>% read_html() %>% html_nodes
 agency_set = gsub('\\s\\(.*','',unlist(agency_lists))
 
 special_stopwords = c(cities,counties,state.name,agency_set)
-stopword_breaks = paste0('\\b',special_stopwords,'\\b')
-stopword_splits = split(stopword_breaks,dplyr::ntile(stopword_breaks,n = 40))
-stopword_splits <- lapply(stopword_splits,paste,collapse = '|')
-custom_stops <- c('environmental impact assessment','environmental impact statement',
-  'analysis','impact','action','alternatives','table','result','public','study','state','associated','eis','significant',
-                  'however','can','chapter','figure')
-#stopwords_regex = paste(custom_stops, collapse = '\\b|\\b')
-#stopwords_regex = paste0('\\b', stopwords_regex, '\\b')
-custom_stops = paste0('\\b',custom_stops,'\\b')
-stopword_splits[[length(stopword_splits)+1]] <- paste(custom_stops,collapse = '|')
-replace_toks = T
-for(corpus_name in flist){
-  corpus_name <- flist[1]
+domain_stops <- c('Environmental Impact Assessment','Environmental Impact Statement','NEPA','EIS','DEIS','FEIS','FONSI','ROD',
+                  'impact','action','Alternative','Alternatives','Table','result','public','study','state','associated',
+                  'significant','Appendix','Executive Summary',
+                  'however','can','Chapter','Figure')
+extrastops <- c(special_stopwords,domain_stops)
+
+source('climate_in_eis_project/code/functions/stopwordParallel.R')
+stopws <- batchStopwords(extrastops)
+
+gloss <- 'https://en.wikipedia.org/wiki/Glossary_of_environmental_science'
+gloss_words <- read_html(gloss) %>% html_nodes('ul b a') %>% html_text(trim = T)
+ngram2_gloss <- gloss_words[str_count(gloss_words,'\\s')==1]
+ngram2_gloss <- tolower(ngram2_gloss[!grepl('[0-9]',ngram2_gloss)])
+
+epa_gloss <- 'https://19january2017snapshot.epa.gov/climatechange/glossary-climate-change-terms_.html'
+epa_words <- read_html(epa_gloss) %>% html_nodes('strong') %>% html_text(trim = T)
+epa_words <- str_remove(epa_words,'\\s\\(.*')
+ngram2_epa <- epa_words[str_count(epa_words,'\\s')==1]
+ngram2_epa <- tolower(ngram2_epa)
+
+
+for(corpus_name in flist[-1]){
   year <- str_extract(corpus_name,'[0-9]{4}')
-  
   corp_file = paste0(storage,'tokens_',year,'.RDS')
   
-  if(!file.exists(corp_file)|replace_toks){
+  if(!file.exists(corp_file)|redraw_corpus){
     print(corpus_name)
     temp = readRDS(paste0(text_loc,corpus_name))
     temp = temp[str_extract(File,'^[0-9]{8}') %in% projs$EIS.Number,]
   
+ 
     clean_temp = FindCleanPages(temp)
+    vecStrRemoveAll <- Vectorize(sequentialStrRemoveAll,vectorize.args = c('text'))
+    clean_temp[,text:=pbsapply(text,function(x) {vecStrRemoveAll(x,patterns = stopws)},cl = 30)]
+    clean_temp[,text:=tolower(text)]
+    clean_temp[,text:=removePunctuation(text)]
+    clean_temp[,text:=removeNumbers(text)]
     page_list = vector()
-  
-    pages = clean_temp$text
-    
-    ##### this isn't something that should be parallelized (I think) because editing simultaneously poses some aggregation issues
-    for(i in 1:length(stopword_splits)){
-      print(i)
-      pages = str_remove_all(pages,pattern = stopword_splits[[i]])
-    }
-    pages = tolower(pages)
-    pages = stringr::str_replace_all(pages, stopwords_regex, '')
-    pages = removePunctuation(pages)
-    pages = removeNumbers(pages)
-    clean_temp[,text:=pages]
+    # ##idea: invert the problem, batch the text, linearize the stopwoerd lists
+    # ##### this isn't something that should be parallelized (I think) because editing simultaneously poses some aggregation issues
+    # for(i in 1:length(stopword_splits)){
+    #   print(i)
+    #   pages = str_remove_all(pages,pattern = stopword_splits[[i]])
+    # }
     source('climate_in_eis_project/code/functions/splitWords.R')
-    vSplit <- Vectorize(splitWords)
-    clean_temp[,text:=vSplit(text)]
+    #vSplit <- Vectorize(splitWords)
+    clean_temp[,text:=pbsapply(text,splitWords,cl = detectCores()-1,USE.NAMES = F)]
+    
     corp = corpus(clean_temp$text,docnames = clean_temp$File,docvars = clean_temp[,.(File,Page)],unique_docnames = F)
     toks = tokens(corp,remove_symbols = T,split_hyphens = F,padding = F,remove_url = T)
     toks = tokens_select(toks,pattern = stopwords("en"),selection = 'remove')
@@ -95,6 +101,8 @@ for(corpus_name in flist){
                        'severe weather',
                        'sealevel rise','air quality','water quality','invasive species','land use','marine heat wave*',
                        'environmental impact statement*','flood control','heat wave*','atmospheric river*')
+    compound_words <- unique(do.call(c,list(compound_words,ngram2_gloss,ngram2_epa)))
+
     toks = tokens_select(toks,min_nchar = 3,max_nchar = max(nchar(compound_words)))
     toks = tokens_compound(toks,pattern = phrase(compound_words))
     saveRDS(toks,paste0(storage,'tokens_',year,'.RDS'))

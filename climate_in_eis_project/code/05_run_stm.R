@@ -3,6 +3,7 @@ packs = c('stm','data.table','stringr','readtext','pbapply','maps','quanteda','t
 sapply(packs[!sapply(packs,require,character.only = T)],install.packages)
 sapply(packs,require,character.only = T)
 
+STEM = F
 redraw_corpus = TRUE
 projs = readRDS('climate_in_eis_project/data_products/deis_metadata_with_covariates.RDS')
 docs = readRDS('climate_in_eis_project/data_products/deis_doc_metadata.RDS')
@@ -34,41 +35,20 @@ qdfm <- qdfm[,!grepl('[x]{3,}',qdfm@Dimnames$features)]
 
 sm <- colSums(qdfm)
 data.table(qdfm@Dimnames$features,sm)[order(-sm),][1:60,]
-custom_stops <- c('analysis','impact','action','alternatives','table','result','public','study','state','associated','eis','significant',
-                  'however','can','chapter','figure')
-qdfm <- qdfm[, !qdfm@Dimnames$features %in% custom_stops]
+data.table(qdfm@Dimnames$features,sm)[order(-sm),][grepl('_',V1),]
+
+
 sm <- colSums(qdfm)
 tail(data.table(qdfm@Dimnames$features,sm)[order(-sm),],40,)
-grep('_',qdfm@Dimnames$features,value =T)
-tm::stopwords()
 
-ft = qdfm@Dimnames$features
-hspell = hunspell_check(ft)
-sug = hunspell_suggest(ft[!hspell])
-
-
-
-for(i in seq_along(hspell)){
-  if(!hspell[i])
-  {
-    hun
-  }
-}
-}
-
-hunspell::hunspell_suggest("ofenvironmental")
-ft[!hspell]
-table(hspell)
-
-
-dim(qdfm)
-
-
-tm::stemDocument()
-
-grep('climate',qdfm_stem@Dimnames$features,value = T)
+if(STEM){
 qdfm_stem = dfm_wordstem(qdfm)
 qdfm_stem <- qdfm_stem[ntoken(qdfm_stem)>0,]
+}
+if(!STEM){
+  qdfm <- qdfm[ntoken(qdfm)>0,]
+  qdfm_stem <- qdfm}
+
 
 meta_eis = projs[match(str_remove(qdfm_stem@Dimnames$docs,'_.*'),projs$EIS.Number),]
 meta_eis$EIS.Number <- as.character(meta_eis$EIS.Number)
