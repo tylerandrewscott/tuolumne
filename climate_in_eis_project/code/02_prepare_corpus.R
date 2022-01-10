@@ -1,5 +1,5 @@
 
-packs = c('stm','data.table','stringr','readtext','pbapply','maps','quanteda','tm','parallel','devtools','tokenizers','hunspell','rvest','dplyr')
+packs = c('stm','data.table','stringr','readtext','pbapply','maps','quanteda','tm','parallel','devtools','tokenizers','hunspell','rvest','dplyr','lexicon')
 sapply(packs[!sapply(packs,require,character.only = T)],install.packages)
 sapply(packs,require,character.only = T)
 if(!require(spacyr)){devtools::install_github("quanteda/spacyr", build_vignettes = FALSE);library("spacyr")}
@@ -17,7 +17,7 @@ redraw_corpus = TRUE
 projs = readRDS('climate_in_eis_project/data_products/deis_metadata_with_covariates.RDS')
 docs = readRDS('climate_in_eis_project/data_products/deis_doc_metadata.RDS')
 
-text_loc = 'climate_in_eis_project/input/'
+text_loc = 'climate_in_eis_project/input/raw_corpus/'
 flist = list.files(text_loc,pattern = 'corpus')
 
 dir.create('climate_in_eis_project/scratch')
@@ -62,7 +62,8 @@ ngram2_epa <- epa_words[str_count(epa_words,'\\s')==1]
 ngram2_epa <- tolower(ngram2_epa)
 
 
-for(corpus_name in flist[-1]){
+for(corpus_name in flist[grepl('201[4-9]|2020|2021',flist)]){
+  
   year <- str_extract(corpus_name,'[0-9]{4}')
   corp_file = paste0(storage,'tokens_',year,'.RDS')
   
@@ -71,12 +72,12 @@ for(corpus_name in flist[-1]){
     temp = readRDS(paste0(text_loc,corpus_name))
     temp = temp[str_extract(File,'^[0-9]{8}') %in% projs$EIS.Number,]
   
- 
     clean_temp = FindCleanPages(temp)
     vecStrRemoveAll <- Vectorize(sequentialStrRemoveAll,vectorize.args = c('text'))
     clean_temp[,text:=pbsapply(text,function(x) {vecStrRemoveAll(x,patterns = stopws)},cl = 30)]
     clean_temp[,text:=tolower(text)]
-    clean_temp[,text:=removePunctuation(text)]
+    clean_temp$text <- str_replace_all(clean_temp$text,'\\/',' ')
+    clean_temp[,text:=removePunctuation(text,preserve_intra_word_contractions = T,preserve_intra_word_dashes = T)]
     clean_temp[,text:=removeNumbers(text)]
     page_list = vector()
     # ##idea: invert the problem, batch the text, linearize the stopwoerd lists
@@ -89,22 +90,25 @@ for(corpus_name in flist[-1]){
     #vSplit <- Vectorize(splitWords)
     clean_temp[,text:=pbsapply(text,splitWords,cl = detectCores()-1,USE.NAMES = F)]
     
-    corp = corpus(clean_temp$text,docnames = clean_temp$File,docvars = clean_temp[,.(File,Page)],unique_docnames = F)
-    toks = tokens(corp,remove_symbols = T,split_hyphens = F,padding = F,remove_url = T)
-    toks = tokens_select(toks,pattern = stopwords("en"),selection = 'remove')
+    corp <- corpus(clean_temp$text,docnames = clean_temp$File,docvars = clean_temp[,.(File,Page)],unique_docnames = F)
+    
+    toks <- tokens(corp,remove_symbols = T,split_hyphens = F,padding = F,remove_url = T,use_lemma = T)
+    toks_lemmatized <- tokens_replace(toks, pattern = lexicon::hash_lemmas$token, replacement = lexicon::hash_lemmas$lemma)
+  
+    toks_lemmatized = tokens_select(toks_lemmatized,pattern = stopwords("en"),selection = 'remove')
     compound_words = c("greenhouse gas*",'climate change*','global warming','carbon emission*','climate impact*','ocean acidification*',
                        'alternative energy','anthropogenic emissions','carbon dioxide','extreme weather','storm surge',
                        'adaptive capacit*','adaptation cost*','renewable energy','sea level rise',
                        'extreme heat','atmospheric river','paris agreement',
                        'renewable energy','solar energy','wind energy','geothermal energy',
                        'fossil fuel*','natural gas','climate mitigat*','climate adapt*',
-                       'severe weather',
+                       'severe weather','power plant',
                        'sealevel rise','air quality','water quality','invasive species','land use','marine heat wave*',
                        'environmental impact statement*','flood control','heat wave*','atmospheric river*')
     compound_words <- unique(do.call(c,list(compound_words,ngram2_gloss,ngram2_epa)))
 
-    toks = tokens_select(toks,min_nchar = 3,max_nchar = max(nchar(compound_words)))
-    toks = tokens_compound(toks,pattern = phrase(compound_words))
+    toks_lemmatized = tokens_select(toks_lemmatized,min_nchar = 3,max_nchar = max(nchar(compound_words)))
+    toks_lemmatized = tokens_compound(toks_lemmatized,pattern = phrase(compound_words))
     saveRDS(toks,paste0(storage,'tokens_',year,'.RDS'))
   }
 }

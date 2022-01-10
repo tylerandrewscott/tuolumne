@@ -17,7 +17,7 @@ sequentialStrRemoveAll <- function(text = NULL,patterns = NULL){
   t = text
   patterns = stopws
   for(p in patterns){
-    t <- str_remove_all(string = t,pattern = p)[[1]]
+    t <- stringr::str_remove_all(string = t,pattern = p)[[1]]
   }
   return(t)
   }

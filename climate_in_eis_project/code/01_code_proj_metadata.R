@@ -104,12 +104,3 @@ dir.create('climate_in_eis_project/output/')
 ggsave(plot = figure1,filename = 'climate_in_eis_project/output/figure1.png',dpi = 350,width = 5,height = 4.5, units = 'in')
 
 saveRDS(projs,paste0(scratch_loc,'deis_metadata_with_covariates.RDS'))
-
-
-
-
-
-
-
-
-

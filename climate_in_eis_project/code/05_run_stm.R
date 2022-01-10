@@ -33,18 +33,16 @@ qdfm <- dfm_trim(qdfm, max_docfreq = 0.3,docfreq_type = 'prop')
 qdfm <- qdfm[ntoken(qdfm)>0,]
 qdfm <- qdfm[,!grepl('[x]{3,}',qdfm@Dimnames$features)]
 
+qdfm <- dfm_trim(qdfm,min_termfreq =10,termfreq_type = 'count')
 sm <- colSums(qdfm)
 data.table(qdfm@Dimnames$features,sm)[order(-sm),][1:60,]
 data.table(qdfm@Dimnames$features,sm)[order(-sm),][grepl('_',V1),]
-
-
 sm <- colSums(qdfm)
 tail(data.table(qdfm@Dimnames$features,sm)[order(-sm),],40,)
 
 if(STEM){
 qdfm_stem = dfm_wordstem(qdfm)
-qdfm_stem <- qdfm_stem[ntoken(qdfm_stem)>0,]
-}
+qdfm_stem <- qdfm_stem[ntoken(qdfm_stem)>0,]}
 if(!STEM){
   qdfm <- qdfm[ntoken(qdfm)>0,]
   qdfm_stem <- qdfm}
@@ -59,7 +57,6 @@ dfm2stm <- convert(qdfm_stem, to = "stm")
 meta_eis_sub = meta_eis[ID %in% names(dfm2stm$documents),]
 meta_eis_sub$YEAR = str_extract(meta_eis_sub$EIS.Number,'^[0-9]{4}')
 dfm2stm$meta = meta_eis_sub
-
 
 dfm2stm$meta$project_EAL[is.na(dfm2stm$meta$project_EAL)] <- median(dfm2stm$meta$project_EAL,na.rm = T)
 dfm2stm$meta$project_CR[is.na(dfm2stm$meta$project_CR)] <- median(dfm2stm$meta$project_CR,na.rm = T)

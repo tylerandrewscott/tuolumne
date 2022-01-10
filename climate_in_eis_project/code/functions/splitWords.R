@@ -1,6 +1,6 @@
 splitWords <- function(text_string){
   #split doc by word
-  words <- str_split(text_string,'\\s{1,}',simplify = F)[[1]]
+  words <- stringr::str_split(text_string,'\\s{1,}',simplify = F)[[1]]
   #check for bad spells
   bad = !hunspell::hunspell_check(words)
   #get replacement suggestions
