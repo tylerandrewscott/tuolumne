@@ -71,8 +71,8 @@ vi_scores_sensitive<-vi_scores_sensitive %>% mutate(Type=plyr::revalue(Variable,
 vi_scores_sensitive$Variable<-ordered(vi_scores_sensitive$Variable,vi_scores_sensitive$Variable)
 
 #vi_scores_1km to no distance
-gg_compare = rbind(vi_scores %>% mutate(model="Distance variable included"),
-                   vi_scores_sensitive %>% mutate(model="No distance variable")) %>% 
+gg_compare = rbind(vi_scores %>% mutate(model="Length variable included"),
+                   vi_scores_sensitive %>% mutate(model="No length variable")) %>% 
   ggplot()+geom_bar(aes(x=Variable,y=Importance,fill=Type),stat="identity")+
   coord_flip()+ggthemes::scale_fill_tableau()+theme_minimal()+facet_wrap(~model)+
   theme(legend.position = c(0.9,0.8))
@@ -288,7 +288,7 @@ md$Cat <- forcats::fct_relevel(md$Cat,'<0.5km','0.5 to 50km','50km to 200km','>2
 lplot<-ggplot(data = md) + 
   geom_bar(aes(x = Cat,fill = as.factor(EIS)),position = 'dodge')+scale_fill_manual(name="Study Type", values=c("#FFC20A","#0C7BDC"),labels=c('EA','EIS')) +
   theme_bw() + theme(legend.position = c(0.8,0.8)) +
-  ggtitle('count of EA and EIS sample by distance category') +
+  ggtitle('count of EA and EIS sample by length category') +
   xlab('Tranmission line corridor length')
 
 ggsave(lplot,filename = paste0(dir,'output/figure_a1.png'),dpi = 300,
