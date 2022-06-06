@@ -1,4 +1,3 @@
-
 packs = c('sf','ggparty','rpart','partykit','caret','tidyverse','ROCR','stringr','data.table','vip','ggthemes','forcats','texreg','pROC')
 have = sapply(packs,require,character.only = T)
 lapply(packs[!have],install.packages)
@@ -49,17 +48,17 @@ names(outresult3_sensitive)<-names(files1)
 
 
 categories<-c("Distance"="Type and Size",
-"Voter Rate"="Context",
-"Population Density"="Context",
-"Critical Habitat"='Regulatory',
-"USFS Ownership"='Regulatory',
-"State Ownership"='Regulatory',
-"Tribal Ownership"='Regulatory',
-"Water NRI&WSR"='Regulatory',
-"NPS Ownership"='Regulatory',
-"FWS Ownership"='Regulatory',
-"Democrat"='Context',
-"Pres. Party"='Context')
+              "Voter Rate"="Context",
+              "Population Density"="Context",
+              "Critical Habitat"='Regulatory',
+              "USFS Ownership"='Regulatory',
+              "State Ownership"='Regulatory',
+              "Tribal Ownership"='Regulatory',
+              "Water NRI&WSR"='Regulatory',
+              "NPS Ownership"='Regulatory',
+              "FWS Ownership"='Regulatory',
+              "Democrat"='Context',
+              "Pres. Party"='Context')
 vi_scores<-outresult3$`1000m` %>% vip::vi()
 vi_scores<-vi_scores %>% mutate(Type=plyr::revalue(Variable,categories))
 vi_scores$Variable<-ordered(vi_scores$Variable,vi_scores$Variable)
@@ -70,14 +69,15 @@ vi_scores %>% ggplot()+geom_bar(aes(x=Variable,y=Importance,fill=Type),stat="ide
 vi_scores_sensitive<-outresult3_sensitive$`1000m` %>% vip::vi()
 vi_scores_sensitive<-vi_scores_sensitive %>% mutate(Type=plyr::revalue(Variable,categories))
 vi_scores_sensitive$Variable<-ordered(vi_scores_sensitive$Variable,vi_scores_sensitive$Variable)
-  
+
 #vi_scores_1km to no distance
 gg_compare = rbind(vi_scores %>% mutate(model="Distance variable included"),
-      vi_scores_sensitive %>% mutate(model="No distance variable")) %>% 
+                   vi_scores_sensitive %>% mutate(model="No distance variable")) %>% 
   ggplot()+geom_bar(aes(x=Variable,y=Importance,fill=Type),stat="identity")+
   coord_flip()+ggthemes::scale_fill_tableau()+theme_minimal()+facet_wrap(~model)+
   theme(legend.position = c(0.9,0.8))
-ggsave(gg_compare,filename = paste0(dir,'output/compare_VIF_withwithout_distance_2.png'),dpi =300)
+
+ggsave(gg_compare,filename = paste0(dir,'output/figure5.png'),dpi =300)
 
 
 #plot vi results
@@ -93,7 +93,7 @@ temp$buffer <- fct_relevel(temp$buffer,'50m','250m','500m','1km','2km')
 gg_compare_buffer <- temp %>% ggplot()+geom_bar(aes(x=Variable,y=Importance,fill=Type),stat="identity")+coord_flip()+ggthemes::scale_fill_tableau()+theme_minimal()+theme(legend.position=c(.85,.2),text=element_text(size=20))+facet_wrap(~buffer)
 
 ggsave(plot=gg_compare_buffer,width=8.6,height = 6,units = 'in',
-       filename = paste0(dir,'output/buffer_compare.png'),dpi = 450)
+       filename = paste0(dir,'output/figure4.png'),dpi = 450)
 
 #vi scores full no distance
 temp<-lapply(outresult3_sensitive, function(X) X %>% prune(cp=.01) %>% vip::vi())
@@ -119,21 +119,20 @@ temp2<-temp+
                  shared_legend = T)+
   theme(text=element_text(size=20)) 
 
-ggsave(paste0(dir,"output/treeout.png"),plot=temp2,height=7,width=10,dpi=450)
-
+ggsave(paste0(dir,"output/figure3.png"),plot=temp2,height=7,width=10,dpi=450)
 
 #plot map of lines
-lineplot <- ggplot(tidycensus::state_laea)+geom_sf(fill="white",colour="black",size=.1)+geom_sf(data=blmdoeshape2 %>% dplyr::filter(yearnum>2004) %>% st_simplify(),aes(fill=Doc_Type,colour=Doc_Type))+ggthemes::theme_map()+scale_fill_manual(name="Study Type", values=c("grey","black"))+scale_colour_manual(name="Study Type",values=c("grey","black"))
-ggsave(plot = lineplot,filename = paste0(dir,"output/linemap.png"),dpi=450)
+lineplot <- ggplot(tidycensus::state_laea)+geom_sf(fill="white",colour="black",size=.1)+geom_sf(data=blmdoeshape2 %>% dplyr::filter(yearnum>2004) %>% st_simplify(),aes(fill=Doc_Type,colour=Doc_Type))+ggthemes::theme_map()+scale_fill_manual(name="Study Type", values=c("#FFC20A","#0C7BDC"))+scale_colour_manual(name="Study Type",values=c("#FFC20A","#0C7BDC"))
+ggsave(plot = lineplot,filename = paste0(dir,"output/figure2.png"),dpi=450)
 ##Logit Model
 modeldatasubst_logit<-blmdoeshape2  %>% 
   as.data.frame() %>% 
   mutate(existing=as.factor(existing>=3),
          distance=distance/1000,newarea=log(as.numeric(newarea+1)),"Population Density"=population10/newarea,"Critical Habitat"=crithabcount,"Water NRI&WSR"=surfacewater.nri) %>%
-plyr::rename(.,c("own.NPS"="NPS Ownership","own.FWS"='FWS Ownership',"own.USFS"="USFS Ownership","own.trib"="Tribal Ownership","own.SLB"="State Ownership","newarea"="Polygon Area","yearnum"="Year","Doc_Type"="Study Type","DH"="Democrat","existing"="Existing","VoterRate"="Voter Rate","distance"="Distance km")) %>%
-dplyr::select(`Study Type`,`Population Density`,`Critical Habitat`,`Water NRI&WSR`,`NPS Ownership`,`FWS Ownership`,`USFS Ownership`,`Tribal Ownership`,`State Ownership`,`Voter Rate`,Existing,`Distance km`,buffer,`Pres. Party`) %>% 
+  plyr::rename(.,c("own.NPS"="NPS Ownership","own.FWS"='FWS Ownership',"own.USFS"="USFS Ownership","own.trib"="Tribal Ownership","own.SLB"="State Ownership","newarea"="Polygon Area","yearnum"="Year","Doc_Type"="Study Type","DH"="Democrat","existing"="Existing","VoterRate"="Voter Rate","distance"="Distance km")) %>%
+  dplyr::select(`Study Type`,`Population Density`,`Critical Habitat`,`Water NRI&WSR`,`NPS Ownership`,`FWS Ownership`,`USFS Ownership`,`Tribal Ownership`,`State Ownership`,`Voter Rate`,Existing,`Distance km`,buffer,`Pres. Party`) %>% 
   filter(buffer=='1000m') %>% 
-                 select(-buffer) 
+  select(-buffer) 
 
 formula1<-`Study Type`~. - Existing - `FWS Ownership` - `NPS Ownership`
 fake = lm(formula1,data = modeldatasubst_logit)
@@ -174,10 +173,10 @@ tr2.pv@gof <- numeric()
 tr2.pv@gof.decimal <- logical()
 tr2.pv@gof.names <- character()
 htmlreg(list(tr.coef,  tr.pv,
-               tr2.coef, tr2.pv),
-          custom.header = list("Model 1" = 1:2,
-                               "Model 2" = 3:4),
-          custom.note = "",file = paste0(dir,'output/compare_logits.html'))
+             tr2.coef, tr2.pv),
+        custom.header = list("Model 1" = 1:2,
+                             "Model 2" = 3:4),
+        custom.note = "",file = paste0(dir,'output/compare_logits.html'))
 
 
 
@@ -196,11 +195,11 @@ library(ROCR)
 blmdoeshape2$buffer
 X = "1000m"
 modeldatasubst<-blmdoeshape2  %>% as.data.frame() %>% 
-    mutate(existing=as.factor(existing>=3),distance=distance/1000,newarea=as.numeric(newarea),
-           "Population Density"=population10/newarea,"Critical Habitat"=crithabcount,"Water NRI&WSR"=surfacewater.nri) %>% 
-    plyr::rename(.,c("own.NPS"="NPS Ownership","own.FWS"='FWS Ownership',"own.USFS"="USFS Ownership","own.trib"="Tribal Ownership","own.SLB"="State Ownership","newarea"="Polygon Area","yearnum"="Year","Doc_Type"="Study Type","DH"="Democrat","existing"="Existing","VoterRate"="Voter Rate","distance"="Distance"))%>% 
-    dplyr::select(`Study Type`,`Population Density`,`Critical Habitat`,`Water NRI&WSR`,`NPS Ownership`,`FWS Ownership`,`USFS Ownership`,`Tribal Ownership`,`State Ownership`,`Democrat`,`Voter Rate`,Existing,Distance,buffer,`Pres. Party`) %>% 
-    filter(buffer==X) %>%  select(-buffer)
+  mutate(existing=as.factor(existing>=3),distance=distance/1000,newarea=as.numeric(newarea),
+         "Population Density"=population10/newarea,"Critical Habitat"=crithabcount,"Water NRI&WSR"=surfacewater.nri) %>% 
+  plyr::rename(.,c("own.NPS"="NPS Ownership","own.FWS"='FWS Ownership',"own.USFS"="USFS Ownership","own.trib"="Tribal Ownership","own.SLB"="State Ownership","newarea"="Polygon Area","yearnum"="Year","Doc_Type"="Study Type","DH"="Democrat","existing"="Existing","VoterRate"="Voter Rate","distance"="Distance"))%>% 
+  dplyr::select(`Study Type`,`Population Density`,`Critical Habitat`,`Water NRI&WSR`,`NPS Ownership`,`FWS Ownership`,`USFS Ownership`,`Tribal Ownership`,`State Ownership`,`Democrat`,`Voter Rate`,Existing,Distance,buffer,`Pres. Party`) %>% 
+  filter(buffer==X) %>%  select(-buffer)
 formula1<-`Study Type`~.
 partmod_5split <- rpart(formula1,data=modeldatasubst,minsplit = 5)
 
@@ -219,7 +218,7 @@ lbs = paste0(c('logit (auc = ','tree (20 split) (auc = ','tree (5 split) (auc = 
 gg_roc = ggplot() + 
   geom_path(aes(y = treeROC$sensitivities,x = 1-treeROC$specificities,col = 'tree (20-split)')) +
   geom_path(aes(y = tree5splitROC$sensitivities,x = 1-tree5splitROC$specificities,col = 'tree (5-split)')) +
-    geom_path(aes(y = logitROC$sensitivities,
+  geom_path(aes(y = logitROC$sensitivities,
                 x = 1-logitROC$specificities,col = 'logit')) +
   theme_bw() + theme(legend.position = c(0.8,0.4)) +
   geom_abline(lty = 2,col = 'grey40')+
@@ -227,13 +226,12 @@ gg_roc = ggplot() +
   scale_color_colorblind(name = 'model',labels = lbs) + 
   ggtitle('ROC curves for classification tree and logit model')
 
-ggsave(gg_roc,filename = paste0(dir,'output/roc_curves.png'),dpi = 300,
+ggsave(gg_roc,filename = paste0(dir,'output/figurea2.png'),dpi = 300,
        height = 5.5, width = 7,units = 'in')
 
 
 
-plot(logitROC)
-(treeROC)
+
 pl <- modeldatasubst_logit$`Study Type`[!is.na(modeldatasubst_logit$`Distance km`)]
 pred.logit <- prediction(binQuad$fitted.values, pl)
 pred.logit<-performance(pred.logit, "tpr", "fpr")
@@ -287,16 +285,15 @@ md<-md[!is.na(Distance),]
 md$Cat <- as.factor(md$Cat)
 md$Cat <- forcats::fct_relevel(md$Cat,'<0.5km','0.5 to 50km','50km to 200km','>200km')
 
-ggplot(data = md) + 
-  geom_bar(aes(x = Cat,fill = as.factor(EIS)),position = 'dodge')+
-  scale_fill_colorblind(name = 'Study',labels=c('EA','EIS')) +
+lplot<-ggplot(data = md) + 
+  geom_bar(aes(x = Cat,fill = as.factor(EIS)),position = 'dodge')+scale_fill_manual(name="Study Type", values=c("#FFC20A","#0C7BDC"),labels=c('EA','EIS')) +
   theme_bw() + theme(legend.position = c(0.8,0.8)) +
   ggtitle('count of EA and EIS sample by distance category') +
   xlab('Tranmission line corridor length')
 
-ggsave(filename=paste0(dir,'output/line_lengths.png'),dpi=300)
+ggsave(lplot,filename = paste0(dir,'output/figure_a1.png'),dpi = 300,
+       height = 5.5, width = 7,units = 'in')
+
+
 ggplot(md,aes(y = log(Distance+0.1),x = as.factor(EIS))) +
   geom_boxplot()
-
-
-
