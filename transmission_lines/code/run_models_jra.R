@@ -37,7 +37,7 @@ outresult3_sensitive<-lapply(names(files1),function(X){
   modeldatasubst<-blmdoeshape2  %>% as.data.frame() %>% 
     mutate(existing=as.factor(existing>=3),distance=distance/1000,newarea=as.numeric(newarea),"Population Density"=population10/newarea,"Critical Habitat"=crithabcount,"Water NRI&WSR"=surfacewater.nri) %>% 
     plyr::rename(.,c("own.NPS"="NPS Ownership","own.FWS"='FWS Ownership',"own.USFS"="USFS Ownership","own.trib"="Tribal Ownership","own.SLB"="State Ownership","newarea"="Polygon Area","yearnum"="Year","Doc_Type"="Study Type","DH"="Democrat","existing"="Existing","VoterRate"="Voter Rate","distance"="Length"))%>% 
-    dplyr::select(`Study Type`,`Population Density`,`Critical Habitat`,`Water NRI&WSR`,`NPS Ownership`,`FWS Ownership`,`USFS Ownership`,`Tribal Ownership`,`State Ownership`,`Democrat`,`Voter Rate`,Existing,buffer,`Pres. Party`,`Length`) %>% filter(buffer==X) %>% 
+    dplyr::select(`Study Type`,`Population Density`,`Critical Habitat`,`Water NRI&WSR`,`NPS Ownership`,`FWS Ownership`,`USFS Ownership`,`Tribal Ownership`,`State Ownership`,`Democrat`,`Voter Rate`,Existing,buffer,`Pres. Party`) %>% filter(buffer==X) %>% 
     select(-buffer)
   formula1<-`Study Type`~.
   rpart(formula1,data=modeldatasubst)
@@ -123,7 +123,7 @@ ggsave(paste0(dir,"output/figure3.png"),plot=temp2,height=7,width=10,dpi=450)
 
 #plot map of lines
 lineplot <- ggplot(tidycensus::state_laea)+geom_sf(fill="white",colour="black",size=.1)+geom_sf(data=blmdoeshape2 %>% dplyr::filter(yearnum>2004) %>% st_simplify(),aes(fill=Doc_Type,colour=Doc_Type))+ggthemes::theme_map()+scale_fill_manual(name="Study Type", values=c("#FFC20A","#0C7BDC"))+scale_colour_manual(name="Study Type",values=c("#FFC20A","#0C7BDC"))
-ggsave(plot = lineplot,filename = paste0(dir,"output/figure2.png"),dpi=450)
+ggsave(plot = lineplot,height=4,width=6,units="in",filename = paste0(dir,"output/figure2.png"),dpi=450)
 ##Logit Model
 modeldatasubst_logit<-blmdoeshape2  %>% 
   as.data.frame() %>% 
