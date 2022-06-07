@@ -1,7 +1,7 @@
 
 
 gc()
-rm(list=ls())
+
 library(ggplot2)
 library(plyr)
 library(dplyr)
