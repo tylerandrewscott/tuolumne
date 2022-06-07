@@ -25,8 +25,8 @@ outresult3<-lapply(names(files1),function(X){
   modeldatasubst<-blmdoeshape2  %>% as.data.frame() %>% 
     mutate(existing=as.factor(existing>=3),distance=distance/1000,newarea=as.numeric(newarea),
            "Population Density"=population10/newarea,"Critical Habitat"=crithabcount,"Water NRI&WSR"=surfacewater.nri) %>% 
-    plyr::rename(.,c("own.NPS"="NPS Ownership","own.FWS"='FWS Ownership',"own.USFS"="USFS Ownership","own.trib"="Tribal Ownership","own.SLB"="State Ownership","newarea"="Polygon Area","yearnum"="Year","Doc_Type"="Study Type","DH"="Democrat","existing"="Existing","VoterRate"="Voter Rate","distance"="Distance"))%>% 
-    dplyr::select(`Study Type`,`Population Density`,`Critical Habitat`,`Water NRI&WSR`,`NPS Ownership`,`FWS Ownership`,`USFS Ownership`,`Tribal Ownership`,`State Ownership`,`Democrat`,`Voter Rate`,Existing,Distance,buffer,`Pres. Party`) %>% 
+    plyr::rename(.,c("own.NPS"="NPS Ownership","own.FWS"='FWS Ownership',"own.USFS"="USFS Ownership","own.trib"="Tribal Ownership","own.SLB"="State Ownership","newarea"="Polygon Area","yearnum"="Year","Doc_Type"="Study Type","DH"="Democrat","existing"="Existing","VoterRate"="Voter Rate","distance"="Length"))%>% 
+    dplyr::select(`Study Type`,`Population Density`,`Critical Habitat`,`Water NRI&WSR`,`NPS Ownership`,`FWS Ownership`,`USFS Ownership`,`Tribal Ownership`,`State Ownership`,`Democrat`,`Voter Rate`,Existing,Length,buffer,`Pres. Party`) %>% 
     filter(buffer==X) %>%  select(-buffer)
   formula1<-`Study Type`~.
   rpart(formula1,data=modeldatasubst)
@@ -36,8 +36,8 @@ names(outresult3)<-names(files1)
 outresult3_sensitive<-lapply(names(files1),function(X){
   modeldatasubst<-blmdoeshape2  %>% as.data.frame() %>% 
     mutate(existing=as.factor(existing>=3),distance=distance/1000,newarea=as.numeric(newarea),"Population Density"=population10/newarea,"Critical Habitat"=crithabcount,"Water NRI&WSR"=surfacewater.nri) %>% 
-    plyr::rename(.,c("own.NPS"="NPS Ownership","own.FWS"='FWS Ownership',"own.USFS"="USFS Ownership","own.trib"="Tribal Ownership","own.SLB"="State Ownership","newarea"="Polygon Area","yearnum"="Year","Doc_Type"="Study Type","DH"="Democrat","existing"="Existing","VoterRate"="Voter Rate","distance"="Distance"))%>% 
-    dplyr::select(`Study Type`,`Population Density`,`Critical Habitat`,`Water NRI&WSR`,`NPS Ownership`,`FWS Ownership`,`USFS Ownership`,`Tribal Ownership`,`State Ownership`,`Democrat`,`Voter Rate`,Existing,buffer,`Pres. Party`) %>% filter(buffer==X) %>% 
+    plyr::rename(.,c("own.NPS"="NPS Ownership","own.FWS"='FWS Ownership',"own.USFS"="USFS Ownership","own.trib"="Tribal Ownership","own.SLB"="State Ownership","newarea"="Polygon Area","yearnum"="Year","Doc_Type"="Study Type","DH"="Democrat","existing"="Existing","VoterRate"="Voter Rate","distance"="Length"))%>% 
+    dplyr::select(`Study Type`,`Population Density`,`Critical Habitat`,`Water NRI&WSR`,`NPS Ownership`,`FWS Ownership`,`USFS Ownership`,`Tribal Ownership`,`State Ownership`,`Democrat`,`Voter Rate`,Existing,buffer,`Pres. Party`,`Length`) %>% filter(buffer==X) %>% 
     select(-buffer)
   formula1<-`Study Type`~.
   rpart(formula1,data=modeldatasubst)
@@ -47,7 +47,7 @@ names(outresult3_sensitive)<-names(files1)
 
 
 
-categories<-c("Distance"="Type and Size",
+categories<-c("Length"="Type and Size",
               "Voter Rate"="Context",
               "Population Density"="Context",
               "Critical Habitat"='Regulatory',
@@ -129,16 +129,16 @@ modeldatasubst_logit<-blmdoeshape2  %>%
   as.data.frame() %>% 
   mutate(existing=as.factor(existing>=3),
          distance=distance/1000,newarea=log(as.numeric(newarea+1)),"Population Density"=population10/newarea,"Critical Habitat"=crithabcount,"Water NRI&WSR"=surfacewater.nri) %>%
-  plyr::rename(.,c("own.NPS"="NPS Ownership","own.FWS"='FWS Ownership',"own.USFS"="USFS Ownership","own.trib"="Tribal Ownership","own.SLB"="State Ownership","newarea"="Polygon Area","yearnum"="Year","Doc_Type"="Study Type","DH"="Democrat","existing"="Existing","VoterRate"="Voter Rate","distance"="Distance km")) %>%
-  dplyr::select(`Study Type`,`Population Density`,`Critical Habitat`,`Water NRI&WSR`,`NPS Ownership`,`FWS Ownership`,`USFS Ownership`,`Tribal Ownership`,`State Ownership`,`Voter Rate`,Existing,`Distance km`,buffer,`Pres. Party`) %>% 
+  plyr::rename(.,c("own.NPS"="NPS Ownership","own.FWS"='FWS Ownership',"own.USFS"="USFS Ownership","own.trib"="Tribal Ownership","own.SLB"="State Ownership","newarea"="Polygon Area","yearnum"="Year","Doc_Type"="Study Type","DH"="Democrat","existing"="Existing","VoterRate"="Voter Rate","distance"="Length km")) %>%
+  dplyr::select(`Study Type`,`Population Density`,`Critical Habitat`,`Water NRI&WSR`,`NPS Ownership`,`FWS Ownership`,`USFS Ownership`,`Tribal Ownership`,`State Ownership`,`Voter Rate`,Existing,`Length km`,buffer,`Pres. Party`) %>% 
   filter(buffer=='1000m') %>% 
   select(-buffer) 
 
 formula1<-`Study Type`~. - Existing - `FWS Ownership` - `NPS Ownership`
 fake = lm(formula1,data = modeldatasubst_logit)
 
-linearForm <- update.formula(fake,~. - `Distance km` + log(`Distance km`+0.01))
-quadForm <- update.formula(fake,~. - `Distance km` + log(`Distance km`+0.01) + I(log(`Distance km`+0.01)^2))
+linearForm <- update.formula(fake,~. - `Length km` + log(`Length km`+0.01))
+quadForm <- update.formula(fake,~. - `Length km` + log(`Length km`+0.01) + I(log(`Length km`+0.01)^2))
 
 binLinear = glm(linearForm,data = modeldatasubst_logit,family=binomial(link = 'logit'))
 binQuad = glm(quadForm,data = modeldatasubst_logit,family=binomial(link = 'logit'))
@@ -146,11 +146,11 @@ binQuad = glm(quadForm,data = modeldatasubst_logit,family=binomial(link = 'logit
 
 library(tidyr)
 library(texreg)
-tr.coef <- extract(binLinear)
+tr.coef <- texreg::extract(binLinear)
 tr.coef@se <- numeric()
 tr.coef@pvalues <- numeric()
 tr.coef@model.name <- "coef"
-tr.pv <- extract(binLinear)
+tr.pv <- texreg::extract(binLinear)
 tr.pv@coef <- tr.pv@pvalues
 tr.pv@se <- numeric()
 tr.pv@pvalues <- numeric()
@@ -160,11 +160,11 @@ tr.pv@gof.decimal <- logical()
 tr.pv@gof.names <- character()
 
 
-tr2.coef <- extract(binQuad)
+tr2.coef <- texreg::extract(binQuad)
 tr2.coef@se <- numeric()
 tr2.coef@pvalues <- numeric()
 tr2.coef@model.name <- "coef"
-tr2.pv <- extract(binQuad)
+tr2.pv <- texreg::extract(binQuad)
 tr2.pv@coef <- tr2.pv@pvalues
 tr2.pv@se <- numeric()
 tr2.pv@pvalues <- numeric()
@@ -197,14 +197,14 @@ X = "1000m"
 modeldatasubst<-blmdoeshape2  %>% as.data.frame() %>% 
   mutate(existing=as.factor(existing>=3),distance=distance/1000,newarea=as.numeric(newarea),
          "Population Density"=population10/newarea,"Critical Habitat"=crithabcount,"Water NRI&WSR"=surfacewater.nri) %>% 
-  plyr::rename(.,c("own.NPS"="NPS Ownership","own.FWS"='FWS Ownership',"own.USFS"="USFS Ownership","own.trib"="Tribal Ownership","own.SLB"="State Ownership","newarea"="Polygon Area","yearnum"="Year","Doc_Type"="Study Type","DH"="Democrat","existing"="Existing","VoterRate"="Voter Rate","distance"="Distance"))%>% 
-  dplyr::select(`Study Type`,`Population Density`,`Critical Habitat`,`Water NRI&WSR`,`NPS Ownership`,`FWS Ownership`,`USFS Ownership`,`Tribal Ownership`,`State Ownership`,`Democrat`,`Voter Rate`,Existing,Distance,buffer,`Pres. Party`) %>% 
+  plyr::rename(.,c("own.NPS"="NPS Ownership","own.FWS"='FWS Ownership',"own.USFS"="USFS Ownership","own.trib"="Tribal Ownership","own.SLB"="State Ownership","newarea"="Polygon Area","yearnum"="Year","Doc_Type"="Study Type","DH"="Democrat","existing"="Existing","VoterRate"="Voter Rate","distance"="Length"))%>% 
+  dplyr::select(`Study Type`,`Population Density`,`Critical Habitat`,`Water NRI&WSR`,`NPS Ownership`,`FWS Ownership`,`USFS Ownership`,`Tribal Ownership`,`State Ownership`,`Democrat`,`Voter Rate`,Existing,Length,buffer,`Pres. Party`) %>% 
   filter(buffer==X) %>%  select(-buffer)
 formula1<-`Study Type`~.
 partmod_5split <- rpart(formula1,data=modeldatasubst,minsplit = 5)
 
 EIS<-(modeldatasubst_logit$`Study Type`=='EIS')+0
-keep <- !is.na(modeldatasubst_logit$`Distance km`)
+keep <- !is.na(modeldatasubst_logit$`Length km`)
 treeROC <- roc(EIS,predict(outresult3$`1000m`, type = "prob")[, 2])
 
 
@@ -232,56 +232,31 @@ ggsave(gg_roc,filename = paste0(dir,'output/figurea2.png'),dpi = 300,
 
 
 
-pl <- modeldatasubst_logit$`Study Type`[!is.na(modeldatasubst_logit$`Distance km`)]
+pl <- modeldatasubst_logit$`Study Type`[!is.na(modeldatasubst_logit$`Length km`)]
 pred.logit <- prediction(binQuad$fitted.values, pl)
 pred.logit<-performance(pred.logit, "tpr", "fpr")
-
-
-
-pred <- prediction(predict(outresult3$`1000m`, type = "prob")[, 2],EIS)
-pred.tree<-performance(pred, "tpr", "fpr")
-library(pROC)
-
-
-
-pred_sensitive <- prediction(predict(outresult3_sensitive$`1000m`, type = "prob")[, 2], modeldatasubst_logit$`Study Type`)
-pred.tree_sensitive<-performance(pred_sensitive, "tpr", "fpr")
-
-pl <- modeldatasubst_logit$`Study Type`[!is.na(modeldatasubst_logit$`Distance km`)]
-pred.logit <- prediction(binQuad$fitted.values, pl)
-pred.logit<-performance(pred.logit, "tpr", "fpr")
-
-rbind(data.frame(model="tree","x"=pred.tree@x.values[[1]],"y"=pred.tree@y.values[[1]]),
-      data.frame(model="logit","x"=pred.logit@x.values[[1]],"y"=pred.logit@y.values[[1]])) %>% 
-  #rbind(data.frame(model="tree no distance","x"=pred.tree_sensitive@x.values[[1]],"y"=pred.tree_sensitive@y.values[[1]])) %>% 
-  ggplot()+geom_line(aes(x=x,y=y,group=model,colour=model),size=2)+
-  theme_bw()+xlab("false positive rate")+ylab("true positive rate")+
-  scale_colour_discrete() + geom_abline(a = 0,b = 1,lty = 2,col = 'grey')
-
-
-stargazer::stargazer(logit1,type="html",report="vcsp",out="logit.sensitivity.html",single.row=T,star.cutoffs = c(.05, .01,.001))
 
 
 X = '1000m'
 md<-blmdoeshape2  %>% as.data.frame() %>% 
   mutate(existing=as.factor(existing>=3),distance=distance/1000,newarea=as.numeric(newarea),
          "Population Density"=population10/newarea,"Critical Habitat"=crithabcount,"Water NRI&WSR"=surfacewater.nri) %>% 
-  plyr::rename(.,c("own.NPS"="NPS Ownership","own.FWS"='FWS Ownership',"own.USFS"="USFS Ownership","own.trib"="Tribal Ownership","own.SLB"="State Ownership","newarea"="Polygon Area","yearnum"="Year","Doc_Type"="Study Type","DH"="Democrat","existing"="Existing","VoterRate"="Voter Rate","distance"="Distance"))%>% 
-  dplyr::select(`Study Type`,`Population Density`,`Critical Habitat`,`Water NRI&WSR`,`NPS Ownership`,`FWS Ownership`,`USFS Ownership`,`Tribal Ownership`,`State Ownership`,`Democrat`,`Voter Rate`,Existing,Distance,buffer,`Pres. Party`) %>% 
+  plyr::rename(.,c("own.NPS"="NPS Ownership","own.FWS"='FWS Ownership',"own.USFS"="USFS Ownership","own.trib"="Tribal Ownership","own.SLB"="State Ownership","newarea"="Polygon Area","yearnum"="Year","Doc_Type"="Study Type","DH"="Democrat","existing"="Existing","VoterRate"="Voter Rate","distance"="Length"))%>% 
+  dplyr::select(`Study Type`,`Population Density`,`Critical Habitat`,`Water NRI&WSR`,`NPS Ownership`,`FWS Ownership`,`USFS Ownership`,`Tribal Ownership`,`State Ownership`,`Democrat`,`Voter Rate`,Existing,Length,buffer,`Pres. Party`) %>% 
   filter(buffer==X) %>%  select(-buffer)
 
 library(mgcv)
 md$EIS <- (md$`Study Type`=='EIS')+0
 
 md <- data.table(md)
-md[Distance < 0.5,][,.N,by=.(EIS)]
+md[Length < 0.5,][,.N,by=.(EIS)]
 
-md$Cat <- case_when(md$Distance<0.5 ~ '<0.5km',
-                    md$Distance>=0.5&md$Distance<50 ~ '0.5 to 50km',
-                    md$Distance>=50&md$Distance<200 ~ '50km to 200km',
-                    md$Distance>=200 ~ '>200km')
+md$Cat <- case_when(md$Length<0.5 ~ '<0.5km',
+                    md$Length>=0.5&md$Length<50 ~ '0.5 to 50km',
+                    md$Length>=50&md$Length<200 ~ '50km to 200km',
+                    md$Length>=200 ~ '>200km')
 
-md<-md[!is.na(Distance),]
+md<-md[!is.na(Length),]
 md$Cat <- as.factor(md$Cat)
 md$Cat <- forcats::fct_relevel(md$Cat,'<0.5km','0.5 to 50km','50km to 200km','>200km')
 
@@ -295,5 +270,3 @@ ggsave(lplot,filename = paste0(dir,'output/figure_a1.png'),dpi = 300,
        height = 5.5, width = 7,units = 'in')
 
 
-ggplot(md,aes(y = log(Distance+0.1),x = as.factor(EIS))) +
-  geom_boxplot()
