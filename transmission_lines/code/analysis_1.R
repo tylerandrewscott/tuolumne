@@ -119,8 +119,7 @@ counties$FIPS<-paste0(counties$STATEFP,counties$COUNTYFP) %>% as.numeric()
 turnout<-merge(turnout,counties)
 
 library(tidycensus)
-#census_api_key("2b1ec2b4424bb192a30563a7c6e53e70a3ac5d31",install=T)
-#readRenviron("~/.Renviron")
+
 age10 <- get_decennial(geography = "county", variables = "P001001",year = 2010)
 turnout<-left_join(turnout,age10 %>% dplyr::select(GEOID,value) %>% plyr::rename(.,c("GEOID"="FIPS","value"="Pop")) %>% mutate(FIPS=as.numeric(FIPS)))
 turnout$voterate<-turnout$totalvotes/turnout$Pop
