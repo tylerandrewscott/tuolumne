@@ -16,6 +16,8 @@ config_file.txt
 
 .Rproj.user
 
+.Rhistory
+.DS_Store
 *.Rout
 */*.Rout
 
