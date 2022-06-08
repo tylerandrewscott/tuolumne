@@ -29,3 +29,6 @@ config_file.txt
 /climate_in_eis_project/scratch/*
 /climate_in_eis_project/yearly_quanteda_tokens/*
 /climate_in_eis_project/input/*
+
+/transmission_lines/input/*
+
