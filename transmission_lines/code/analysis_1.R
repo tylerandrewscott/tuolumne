@@ -1,27 +1,31 @@
 
+#data_files available at https://colostate-my.sharepoint.com/:u:/g/personal/rpscott_colostate_edu/EUBhm9d2gFFMuaW8mHlomVIBGbTBiIqwip10HY8c50JJhg?e=Tt9E58
 
-gc()
+#Unzip to input folder (gitignored by default)
+
+dir = 'Documents/GitHub/tuolumne/transmission_lines/'
 
 library(ggplot2)
 library(plyr)
 library(dplyr)
 library(sf)
-blmdoeshape<-readRDS("blm_doe_shapes.rds")
+
+blmdoeshape<-readRDS("input/blm_doe_shapes.rds")
 blmdoeshape<-st_sf(blmdoeshape)
 blmdoeshape<-st_make_valid(blmdoeshape[1:279,])
 st_length(blmdoeshape)
 
 redo_buffer<-function(blmdoeshape2,buffer){
 blmdoeshape2<-st_buffer(blmdoeshape2,dist=buffer)
-crithab<-read_sf("Downloads/routingengine/land_critical_habitat_area_v3/ez_gis.land_critical_habitat_area_v3.shp")
-watercenter<-st_read("Downloads/routingengine/Nationwide Rivers Inventory/NRI.gdb","HYDRO_NationwideRiversInventory_ln")
-watercenter2<-st_read("Downloads/routingengine/S_USA.WildScenicRiver_LN.gdb")
+crithab<-read_sf("input/land_critical_habitat_area_v3/ez_gis.land_critical_habitat_area_v3.shp")
+watercenter<-st_read("input/Nationwide Rivers Inventory/NRI.gdb","HYDRO_NationwideRiversInventory_ln")
+watercenter2<-st_read("input/S_USA.WildScenicRiver_LN.gdb")
 watercenter<-c(watercenter %>% st_geometry(),watercenter2 %>% st_geometry())
 crithab<-st_intersects(blmdoeshape2,st_transform(crithab,st_crs(blmdoeshape2)))
 blmdoeshape2$crithabcount<-sapply(crithab,length)
 watercenter<-st_intersects(blmdoeshape2,st_transform(watercenter,st_crs(blmdoeshape2)))
 blmdoeshape2$surfacewater.nri<-sapply(watercenter,length)
-PADB<-read_sf("Downloads/routingengine/land_restriction_protected_areas_database_v3/ez_gis.land_restriction_protected_areas_database_v3.shp")
+PADB<-read_sf("input/land_restriction_protected_areas_database_v3/ez_gis.land_restriction_protected_areas_database_v3.shp")
 PADBi<-st_intersects(blmdoeshape2,st_transform(PADB,st_crs(blmdoeshape)))
 PADBb<-PADB[unlist(PADBi) %>% unique(),]
 ownlist<-lapply(1:nrow(blmdoeshape2), function(X) PADB$own_name[PADBi[[X]]])
@@ -34,14 +38,14 @@ blmdoeshape2$own.USBR<-sapply(ownlist, function(X) "USBR"%in%X)
 #blmdoeshape2$maxcapacity<-sapply(gd1a$capacity, function(X) max(as.numeric(X),na.rm=T))
 blmdoeshape2$newarea<-blmdoeshape2 %>% st_area()
 
-tlines<-read.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQck262IIZxf_o5q2Ci9gRlY2qTPzw0WqCsEch3RXNAqYVd-JKZgZLpSPGc3GxB3TsW0Dek2hd3_H6k/pub?gid=811733457&single=true&output=csv")
+tlines<-read.csv("input/raw_transmission_line_sheet.csv")
 blmdoeshape2<-left_join(blmdoeshape2,tlines)
 blmdoeshape2$YEAR<-ifelse(is.na(blmdoeshape2$YEAR),blmdoeshape2$ID %>% stringr::str_extract("-(2|1)(9|0)[0-9][0-9]-") %>% stringr::str_extract("[0-9]+"),blmdoeshape2$YEAR)
 blmdoeshape2<-blmdoeshape2[blmdoeshape2$geometry %>% sapply(.,length)>0,]
 library(raster)
 #population
-poptif1<-raster::raster("Downloads/usgrid_data_2000/geotiff/uspop00.tif")
-poptif<-raster::raster("Downloads/usgrid_data_2010/geotiff/uspop10.tif")
+poptif1<-raster::raster("input/usgrid_data_2000/geotiff/uspop00.tif")
+poptif<-raster::raster("input/usgrid_data_2010/geotiff/uspop10.tif")
 poptif<-raster::projectRaster(poptif,crs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs")
 poptif1<-raster::projectRaster(poptif1,crs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs")
 gc()
@@ -61,7 +65,7 @@ cellmelt<-ddply(cellmelt, .(L1),summarize, pop2010=sum(pop2010,na.rm=T), pop2000
 blmdoeshape2$population10<-ifelse(as.numeric(blmdoeshape2$YEAR)>2009,cellmelt$pop2010,cellmelt$pop2000)
 
 
-egsubregion<-read_sf("Downloads/egrid_subregions/eGRID2014_subregions.shp")
+egsubregion<-read_sf("input/egrid_subregions/eGRID2014_subregions.shp")
 bmatch<-st_intersects(blmdoeshape2,egsubregion %>% st_transform(st_crs(blmdoeshape2)))
 bmatch<-bmatch %>% lapply(.,function(X) egsubregion$zips_for_G[X]) %>% reshape2::melt()
 table(bmatch$value)
@@ -73,7 +77,7 @@ blmdoeshape2$yearnum<-as.numeric(blmdoeshape2$YEAR)
 
 st_write(blmdoeshape2 %>% dplyr::select(ID,yearnum),"blm_doe_shape.shp",append=FALSE)
 blmshape<-st_read("blm_doe_shape.shp")
-cvoteS<-readRDS("Downloads/countyVoteShare_3-2020_imputed.rds")
+cvoteS<-readRDS("input/countyVoteShare_3-2020_imputed.rds")
 counties<-tigris::counties(class="sf")
 cvoteS$FISCAL_YEAR %>% table()
 counties<-counties %>% mutate(CFIPS=paste0(STATEFP,COUNTYFP)) %>% dplyr::select(CFIPS) 
@@ -95,7 +99,7 @@ demlist<-lapply(2005:2018, function(i){
 })
 blmdoeshape2<-blmdoeshape2 %>% left_join(.,demlist %>% bind_rows())
 
-rebuildstatus<-readRDS("Box/tuolumne/scratch/transmission_lines/text_projtype_matches.rds")
+rebuildstatus<-readRDS("input/text_projtype_matches.rds")
 blmdoeshape2<-left_join(blmdoeshape2,rebuildstatus)
 blmdoeshape2$existing <-blmdoeshape2$sum_total>=3
 
@@ -106,11 +110,11 @@ blmdoeshape2$newarea <-blmdoeshape2$newarea %>% as.numeric(.)/1000000
 
 blmdoeshape2$Doc_Type <-blmdoeshape2$Doc_Type %>% relevel(.,ref="EA")
 blmdoeshape2$Office2<-c(blmdoeshape2$ID %>% substring(.,1,10) %>% .[1:193],blmdoeshape2$Office[194:279])
-rebuildstatus<-readRDS("Box/tuolumne/scratch/transmission_lines/text_projtype_matches.rds")
+rebuildstatus<-readRDS("input/text_projtype_matches.rds")
 blmdoeshape2<-left_join(blmdoeshape2,rebuildstatus)
 blmdoeshape2$existing <-blmdoeshape2$sum_total>=3
 
-turnout<-read.csv("Downloads/dataverse_files (2)/countypres_2000-2016.csv")
+turnout<-read.csv("input/countypres_2000-2016.csv")
 turnout<-turnout %>% dplyr::select(office,year,FIPS,totalvotes) %>% unique()
 
 counties<-tigris::counties(class="sf")
