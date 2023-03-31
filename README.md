@@ -24,4 +24,6 @@ Published works include:
 
     /transmission_lines/
 
-   [[[add risk analysis paper here]]
+Scott, Ryan P., Nicola Ulibarri, and Tyler A. Scott. "Concise or comprehensive? Predictors of impact assessment choices for electric transmission line projects." Risk Analysis (2022). https://onlinelibrary.wiley.com/doi/abs/10.1111/risa.13977?casa_token=Vs2n4e0Rzu8AAAAA:-6Hoktp5njS5pyrwCUfm75Uw-s864n1JCecEXRnykpA9vD4B6oU4TnkFWKihNjfeWDDyug9Qej_I76He
+
+
