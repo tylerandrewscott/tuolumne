@@ -7,20 +7,44 @@ if(!require(spacyr)){devtools::install_github("quanteda/spacyr", build_vignettes
 ### might need to run this to install miniconda 
 ### perhaps come back and hard wire this
 #spacy_install()
-spacy_initialize()
+#spacy_initialize()
 
 source('climate_in_eis_project/code/functions/FindCleanPages.R')
-
-redraw_corpus = FALSE
-
+redraw_corpus = TRUE
 projs = readRDS('climate_in_eis_project/data_products/deis_metadata_with_covariates.RDS')
 docs = readRDS('climate_in_eis_project/data_products/deis_doc_metadata.RDS')
 
 text_loc = '../eis_documents/enepa_repository/text_as_datatable/'
-flist = list.files(text_loc,full.names = T,recursive = T)
-docs$text_name <- str_replace(docs$File_Name,'pdf$','txt')
+flist = list.files(text_loc,recursive = T,full.names = T)
+docs$tname <- str_replace(docs$File_Name,'pdf$','txt')
+docs$tname = str_remove_all(docs$tname,'.+--')
 
-flist = flist[basename(flist) %in% docs$text_name]
+flist = flist[basename(flist) %in% docs$tname]
+
+
+tx = fread(flist[1])
+
+library(transforEmotion)
+
+# Example text
+text <- neo_ipip_extraversion$friendliness[1:5] # positively worded items only
+library(text)
+
+text
+# Run transformer function
+scrs = transformer_scores(transformer = 'facebook/bart-large-mnli',
+  text = tx$text,multiple_classes = F,
+  classes = c('climate adaptation','climate mitigation')
+)
+
+
+tx$text[102]
+textEm
+temp_txt = fread(flist[1])
+
+
+
+
 
 
 dir.create('climate_in_eis_project/scratch')
@@ -38,12 +62,10 @@ agencies = str_remove(unlist(str_split(agencies,'\\s\\(|\\n')),'\\).*')
 agencies = agencies[nchar(agencies)<100]
 agencies = agencies[!duplicated(agencies)]
 
-lt = letters[!letters %in% c('q','x','y','z')]
-letter_pages = paste0('https://www.usa.gov/agency-index/',paste0(lt,'#',toupper(lt)))
-letter_pages[1] <- 'https://www.usa.gov/agency-index/'
-agency_names = pblapply(letter_pages,function(x) {print(x);{x %>% read_html() %>% html_nodes('p+ div a') %>% html_text(trim = T)}})
-
-agency_set = unique(unlist(agency_names))
+agency_pages = read_html('https://www.usa.gov/federal-agencies') %>% html_nodes('.group a') %>% html_attr('href')
+letter_pages = paste0('https://www.usa.gov',c(gsub('b#','a#',agency_pages[1],fixed = T),agency_pages))
+agency_lists = lapply(letter_pages, function(x) x %>% read_html() %>% html_nodes('.one_column_bullet .url') %>% html_text(trim = T))
+agency_set = gsub('\\s\\(.*','',unlist(agency_lists))
 
 special_stopwords = c(cities,counties,state.name,agency_set)
 domain_stops <- c('Environmental Impact Assessment','Environmental Impact Statement','NEPA','EIS','DEIS','FEIS','FONSI','ROD',
@@ -66,22 +88,19 @@ epa_words <- str_remove(epa_words,'\\s\\(.*')
 ngram2_epa <- epa_words[str_count(epa_words,'\\s')==1]
 ngram2_epa <- tolower(ngram2_epa)
 
-vecStrRemoveAll <- Vectorize(sequentialStrRemoveAll,vectorize.args = c('text'))
-source('climate_in_eis_project/code/functions/splitWords.R')
 
-
-for(file in flist){
-  token_file <- str_replace(basename(file),'txt$','rds')
-  save_loc <- paste0('climate_in_eis_project/scratch/tokenized_documents/',token_file)
-  #token_file = paste0(storage, str_replace(basename(file),'txt$','rds'))
-  if({!file.exists(save_loc)} | redraw_corpus){
-    print(file)
-   # file = "../eis_documents/enepa_repository/text_as_datatable//2013/20130024_Pilgrim_Creek_Timber_Sale_DEIS_App_A_Alt2_map.txt"
-    # temp = readRDS(paste0(text_loc,corpus_name))
-  #  temp = temp[str_extract(File,'^[0-9]{8}') %in% projs$EIS.Number,]
-    txt = fread(file)
-    txt$File = basename(file)
-    clean_temp = FindCleanPages(txt)
+for(corpus_name in flist[-1]){
+  year <- str_extract(corpus_name,'[0-9]{4}')
+  corp_file = paste0(storage,'tokens_',year,'.RDS')
+  
+  if(!file.exists(corp_file)|redraw_corpus){
+    print(corpus_name)
+    temp = readRDS(paste0(text_loc,corpus_name))
+    temp = temp[str_extract(File,'^[0-9]{8}') %in% projs$EIS.Number,]
+  
+ 
+    clean_temp = FindCleanPages(temp)
+    vecStrRemoveAll <- Vectorize(sequentialStrRemoveAll,vectorize.args = c('text'))
     clean_temp[,text:=pbsapply(text,function(x) {vecStrRemoveAll(x,patterns = stopws)},cl = 30)]
     clean_temp[,text:=tolower(text)]
     clean_temp[,text:=removePunctuation(text)]
@@ -93,10 +112,10 @@ for(file in flist){
     #   print(i)
     #   pages = str_remove_all(pages,pattern = stopword_splits[[i]])
     # }
-
+    source('climate_in_eis_project/code/functions/splitWords.R')
     #vSplit <- Vectorize(splitWords)
     clean_temp[,text:=pbsapply(text,splitWords,cl = detectCores()-1,USE.NAMES = F)]
-    if(identical(list(),clean_temp$text)){next}else{
+    
     corp = corpus(clean_temp$text,docnames = clean_temp$File,docvars = clean_temp[,.(File,Page)],unique_docnames = F)
     toks = tokens(corp,remove_symbols = T,split_hyphens = F,padding = F,remove_url = T)
     toks = tokens_select(toks,pattern = stopwords("en"),selection = 'remove')
@@ -113,8 +132,7 @@ for(file in flist){
 
     toks = tokens_select(toks,min_nchar = 3,max_nchar = max(nchar(compound_words)))
     toks = tokens_compound(toks,pattern = phrase(compound_words))
-    saveRDS(toks,save_loc)
-    }
+    saveRDS(toks,paste0(storage,'tokens_',year,'.RDS'))
   }
 }
 

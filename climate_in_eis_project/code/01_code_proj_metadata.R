@@ -58,45 +58,62 @@ ideology_sheet = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSOSX--qpOSyBZ
 ideol = fread(ideology_sheet)
 subs = str_split(ideol$epaStandIn,', ')
 
-projs$index = match(projs$Lead.Agency,ideol$epaName)
-projs = data.table(projs,ideol[unlist(sapply(projs$Lead.Agency,function(x) c(grep(x,ideol$epaName),grep(x,ideol$epaStandIn)))),])
+ideol = ideol[epaName!='',]
+#projs$Lead.Agency[{!projs$Lead.Agency %in% ideol$epaName} & {!projs$Lead.Agency %in% unlist(str_split(ideol$epaStandIn,"\\,\\s"))}]
 
-projs = data.table(left_join(projs,projs[,list(mean(skills_rating),mean(ideo_rating)),by=.(AGENCY)]))
+first_col = projs$Lead.Agency %in% ideol$epaName
+index = unlist(ifelse(first_col,match(projs$Lead.Agency,ideol$epaName),sapply(projs$Lead.Agency,function(x) grep(x,ideol$epaStandIn))))
+projs = cbind(projs,ideol[index,])
+
+
 projs$DEC_DATE = decimal_date(mdy(projs$Federal.Register.Date))-2013
 
-projs$ABBREV[projs$AGENCY=='Nuclear Regulatory Commission'] <- 'NRC'
-projs$ABBREV[projs$AGENCY=='Department of Defense'] <- 'DoD'
-projs$ABBREV[projs$AGENCY=='Department of Commerce'] <- 'DoC'
-projs$ABBREV[projs$AGENCY=='Bureau of Indian Affairs'] <- 'BIA'
-projs$ABBREV[projs$AGENCY=='Department of Housing and Urban Development'] <- 'HUD'
-projs$ABBREV[projs$AGENCY=='U.S. Army Corps of Engineers'] <- 'ACOE'
-projs$ABBREV[projs$AGENCY=='Federal Highway Administration'] <- 'FHWA'
-projs$ABBREV[projs$AGENCY=='Federal Energy Regulatory Commission'] <- 'FERC'
-projs$ABBREV[projs$AGENCY=='General Services Administration'] <- 'GSA'
-projs$ABBREV[projs$AGENCY=='Department of Health and Human Services'] <- 'HHS'
-projs$ABBREV[projs$AGENCY=='Department of Homeland Security'] <- 'DHS'
-projs$ABBREV[projs$AGENCY=="Fish and Wildlife Service"  ] <- 'FWS'
-projs$ABBREV[projs$AGENCY=="National Park Service"  ] <- 'NPS'
-projs$ABBREV[projs$AGENCY=="Forest Service"  ] <- 'FS'
-projs$ABBREV[projs$AGENCY=="Bureau of Reclamation" ] <- 'BR'
-projs$ABBREV[projs$AGENCY=="Department of Interior (other)" ] <- 'DoI (other)'
-projs$ABBREV[projs$AGENCY=="USDA (non-FS)" ] <- 'DoA (other)'
-projs$ABBREV[projs$AGENCY=="Department of Transportation (other)" ] <- 'DoT (other)'
-projs$ABBREV[projs$AGENCY=="Tennessee Valley Authority"  ] <- 'TVA'
-projs$ABBREV[projs$AGENCY=="Bureau of Land Management" ] <- 'BLM'
-projs$ABBREV[projs$AGENCY=="Department of Energy" ] <- 'DoE'
-projs$ABBREV[projs$AGENCY== "National Oceanic and Atmospheric Administration"  ] <- 'NOAA'
+# 
+# projs$ABBREV[projs$AGENCY=='Nuclear Regulatory Commission'] <- 'NRC'
+# projs$ABBREV[projs$AGENCY=='Department of Defense'] <- 'DoD'
+# projs$ABBREV[projs$AGENCY=='Department of Commerce'] <- 'DoC'
+# projs$ABBREV[projs$AGENCY=='Bureau of Indian Affairs'] <- 'BIA'
+# projs$ABBREV[projs$AGENCY=='Department of Housing and Urban Development'] <- 'HUD'
+# projs$ABBREV[projs$AGENCY=='U.S. Army Corps of Engineers'] <- 'ACOE'
+# projs$ABBREV[projs$AGENCY=='Federal Highway Administration'] <- 'FHWA'
+# projs$ABBREV[projs$AGENCY=='Federal Energy Regulatory Commission'] <- 'FERC'
+# projs$ABBREV[projs$AGENCY=='General Services Administration'] <- 'GSA'
+# projs$ABBREV[projs$AGENCY=='Department of Health and Human Services'] <- 'HHS'
+# projs$ABBREV[projs$AGENCY=='Department of Homeland Security'] <- 'DHS'
+# projs$ABBREV[projs$AGENCY=="Fish and Wildlife Service"  ] <- 'FWS'
+# projs$ABBREV[projs$AGENCY=="National Park Service"  ] <- 'NPS'
+# projs$ABBREV[projs$AGENCY=="Forest Service"  ] <- 'FS'
+# projs$ABBREV[projs$AGENCY=="Bureau of Reclamation" ] <- 'BR'
+# projs$ABBREV[projs$AGENCY=="Department of Interior (other)" ] <- 'DoI (other)'
+# projs$ABBREV[projs$AGENCY=="USDA (non-FS)" ] <- 'DoA (other)'
+# projs$ABBREV[projs$AGENCY=="Department of Transportation (other)" ] <- 'DoT (other)'
+# projs$ABBREV[projs$AGENCY=="Tennessee Valley Authority"  ] <- 'TVA'
+# projs$ABBREV[projs$AGENCY=="Bureau of Land Management" ] <- 'BLM'
+# projs$ABBREV[projs$AGENCY=="Department of Energy" ] <- 'DoE'
+# projs$ABBREV[projs$AGENCY=="Department of Veteran Affairs" ] <- 'VA'
+# projs$ABBREV[projs$AGENCY=="National Aeronautics and Space Administration" ] <- 'NASA'
+# projs$ABBREV[projs$AGENCY=="Department of State" ] <- 'DoS'
+# projs$ABBREV[projs$AGENCY== "National Oceanic and Atmospheric Administration"  ] <- 'NOAA'
+
+#projs[!duplicated(AGENCY)&ABBREV=='HUD',]
+
+projs$ABBREV = projs$acr
+
+#projs[,grepl('agency',tolower(colnames(projs))),with = F]
+#projs$acr[projs$AGENCY=='Department of Housing and Urban Development']
 
 
-projs[is.na(PROJECT_TYPE),]$Title
-table(is.na(projs$PROJECT_TYPE),is.na(projs$PROJECT_TOPIC))
 
 figure1 = ggplot(projs[!duplicated(AGENCY),]) + 
-  geom_hline(yintercept = projs[ABBREV=='TVA']$V2[1],lty=2)+
-  geom_label(x = -1,y = projs[ABBREV=='TVA']$V2[1],label='TVA')+
+  #scale_x_continuous(limits = c(-2,2)) +
+  #scale_y_continuous(limits = c(-2,2))+
+  geom_hline(yintercept = projs[ABBREV=='TVA']$ideo_rating[1],lty=2)+
+  geom_label(x = -1,y = projs[ABBREV=='TVA']$ideo_rating[1],label='TVA')+
   geom_point(aes(x = ideo_rating,y = skills_rating)) + 
-  geom_text_repel(aes(x = ideo_rating,y = skills_rating,label = ABBREV)) + 
-  theme_bw() + xlab('Ideological rating (liberal < conservative)') + ylab('Workforce skill (less < more)') + 
+  geom_text_repel(aes(x = ideo_rating,y = skills_rating,label = ABBREV),max.overlaps = 20) + 
+  theme_bw() + 
+  xlab('Ideological rating (liberal < conservative)') + 
+  ylab('Workforce skill (less < more)') + 
   ggtitle('Ideology and workforce skill by agency','(using Richardson et al. 2018 scores)') +
   labs(caption = "*TVA missing ideology score")
 
